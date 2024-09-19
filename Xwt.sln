@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XamMacTest", "TestApps\XamM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt.XamMac", "Xwt.XamMac\Xwt.XamMac.csproj", "{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt.Gtk", "Xwt.Gtk\Xwt.Gtk.csproj", "{A5B9B855-2B07-4A1D-94A7-8ED905F5CDC5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +49,10 @@ Global
 		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5B9B855-2B07-4A1D-94A7-8ED905F5CDC5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5B9B855-2B07-4A1D-94A7-8ED905F5CDC5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5B9B855-2B07-4A1D-94A7-8ED905F5CDC5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5B9B855-2B07-4A1D-94A7-8ED905F5CDC5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,5 +61,8 @@ Global
 		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897} = {889B98A1-B4AC-48E1-AA64-5982169FDC2E}
 		{BC0E2D1D-0D42-4744-BB6C-F93431399E5D} = {889B98A1-B4AC-48E1-AA64-5982169FDC2E}
 		{1454720E-F3CD-4450-9832-D9111E3EB668} = {889B98A1-B4AC-48E1-AA64-5982169FDC2E}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E22FCC3F-3BFD-4EC0-A833-B3A3B950417A}
 	EndGlobalSection
 EndGlobal
