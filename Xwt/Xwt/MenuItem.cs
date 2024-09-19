@@ -69,11 +69,6 @@ namespace Xwt
 			return new MenuItemBackendHost ();
 		}
 		
-		static MenuItem ()
-		{
-			MapEvent (MenuItemEvent.Clicked, typeof(MenuItem), "OnClicked");
-		}
-		
 		public MenuItem ()
 		{
 			if (!IsSeparator)
@@ -98,6 +93,10 @@ namespace Xwt
 			Image = command.Icon;
 		}
 		
+		public IMenuItemBackend MenuItemBackend {
+			get { return Backend; }
+		}
+
 		IMenuItemBackend Backend {
 			get { return (IMenuItemBackend) base.BackendHost.Backend; }
 		}
@@ -105,7 +104,7 @@ namespace Xwt
 		bool IsSeparator {
 			get { return this is SeparatorMenuItem; }
 		}
-		
+
 		[DefaultValue ("")]
 		public string Label {
 			get { return Backend.Label; }
@@ -177,7 +176,29 @@ namespace Xwt
 			get { return Backend.Visible; }
 			set { Backend.Visible = value; }
 		}
+
+		public bool IsSubMenuOpen {
+			get { return Backend.IsSubMenuOpen; }
+			set { Backend.IsSubMenuOpen = value; }
+		}
 		
+
+		public KeyShortcut Shortcut {
+			get { return Backend.Shortcut; }
+			set { Backend.Shortcut = value; }
+		}
+
+		[DefaultValue("")]
+		public string ToolTip {
+			get { return Backend.ToolTip; }
+			set {
+				if(IsSeparator) {
+					throw new NotSupportedException();
+				}
+				Backend.ToolTip = value;
+			}
+		}
+
 		public Image Image {
 			get { return image; }
 			set {
@@ -227,6 +248,7 @@ namespace Xwt
 			OnClicked (EventArgs.Empty);
 		}
 		
+		[MappedEvent(MenuItemEvent.Clicked)]
 		protected virtual void OnClicked (EventArgs e)
 		{
 			if (clicked != null)
@@ -258,6 +280,16 @@ namespace Xwt
 		Normal,
 		CheckBox,
 		RadioButton
+	}
+
+	public class KeyShortcut {
+		public KeyboardKey Key { get; set; }
+		public KeyboardKeyModifiers Modifiers { get; set; }
+
+		public KeyShortcut(KeyboardKey key, KeyboardKeyModifiers modifiers) {
+			this.Key = key;
+			this.Modifiers = modifiers;
+		}
 	}
 }
 

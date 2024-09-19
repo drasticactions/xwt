@@ -33,8 +33,6 @@ namespace Xwt.Backends
 		int LineSpacing { get; set; }
 
 		IRichTextBuffer CurrentBuffer { get; }
-
-		Color TextColor { get; set; }
 	}
 
 	public interface IRichTextBuffer

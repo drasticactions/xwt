@@ -95,6 +95,11 @@ namespace Xwt.Backends
 		/// <value><c>true</c> if the window is in full screen mode; otherwise, <c>false</c>.</value>
 		bool FullScreen { get; set; }
 
+
+		WindowState WindowState { get; set; }
+
+		Rectangle RestoreBounds { get; }
+
 		/// <summary>
 		/// Gets the screen on which most of the area of this window is placed
 		/// </summary>
@@ -125,6 +130,8 @@ namespace Xwt.Backends
 		void OnHidden ();
 		bool OnCloseRequested ();
 		void OnClosed ();
+		void OnBecomeMain ();
+		void OnBecomeKey ();
 	}
 
 	[Flags]

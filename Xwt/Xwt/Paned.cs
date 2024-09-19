@@ -73,11 +73,6 @@ namespace Xwt
 			}
 		}
 		
-		static Paned ()
-		{
-			MapEvent (PanedEvent.PositionChanged, typeof(Paned), "OnPositionChanged");
-		}
-		
 		internal Paned (Orientation direction)
 		{
 			this.direction = direction;
@@ -180,6 +175,7 @@ namespace Xwt
 			OnPositionChanged ();
 		}
 		
+		[MappedEvent(PanedEvent.PositionChanged)]
 		protected virtual void OnPositionChanged ()
 		{
 			if (positionChanged != null)

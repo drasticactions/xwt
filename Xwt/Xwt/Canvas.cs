@@ -73,6 +73,14 @@ namespace Xwt
 			AddChild (w, 0, 0);
 		}
 
+		protected override void Dispose(bool disposing) {
+			base.Dispose(disposing);
+			Xwt.Application.Invoke(() => {
+				Clear();
+				ResourceManager.FreeResource(Backend);
+			});
+		}
+
 		/// <summary>
 		/// Adds a child widget.
 		/// </summary>

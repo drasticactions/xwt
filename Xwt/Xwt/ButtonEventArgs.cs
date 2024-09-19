@@ -82,6 +82,10 @@ namespace Xwt
 		public int MultiplePress { get; set; }
 
 		/// <summary>
+		/// True if the event source is the same as the event handler's object (false probably indicates an event from a child object)
+		/// </summary>
+		public bool IsFromSource { get; set; } = true;
+		
 		/// Gets or sets value indicating whether context menu should be shown
 		/// </summary>
 		/// <value><c>true</c> if this context menu should be shown; otherwise, <c>false</c>.</value>

@@ -37,6 +37,16 @@ namespace Xwt
 		WidgetSpacing padding;
 		Menu mainMenu;
 		bool shown;
+		bool canBecomeKey = true;
+
+		public bool CanBecomeKey {
+			get {
+				return canBecomeKey;
+			}
+			set {
+				canBecomeKey = value;
+			}
+		}
 
 		protected new class WindowBackendHost: WindowFrame.WindowBackendHost
 		{
@@ -56,7 +66,11 @@ namespace Xwt
 			if (!initialPadding.IsZero)
 				Padding = initialPadding;
 		}
-		
+
+		public IWindowBackend WindowBackend {
+			get { return Backend; } 
+		}
+
 		IWindowBackend Backend {
 			get { return (IWindowBackend) BackendHost.Backend; } 
 		}
@@ -265,7 +279,7 @@ namespace Xwt
 						Backend.Bounds = new Rectangle (initialBounds.X, initialBounds.Y, size.Width, size.Height);
 					else
 						Backend.SetSize (size.Width, size.Height);
-				} else if (locationSet && !shown)
+				} else if (locationSet)
 					Backend.Move (initialBounds.X, initialBounds.Y);
 	
 			} else {

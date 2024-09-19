@@ -126,15 +126,6 @@ namespace Xwt
 			}
 		}
 
-		public Drawing.Color TextColor {
-			get {
-				return Backend.TextColor;
-			}
-			set {
-				Backend.TextColor = value;
-			}
-		}
-
 		protected override BackendHost CreateBackendHost ()
 		{
 			return new WidgetBackendHost ();

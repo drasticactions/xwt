@@ -60,6 +60,11 @@ namespace Xwt
 				((TreeView)Parent).OnRowActivated (new TreeViewRowEventArgs (position));
 			}
 
+			public void OnRowCollapsed (TreePosition position)
+			{
+				((TreeView)Parent).OnRowCollapsed(new TreeViewRowEventArgs(position));
+			}
+
 			public void OnRowExpanded (TreePosition position)
 			{
 				((TreeView)Parent).OnRowExpanded (new TreeViewRowEventArgs (position));
@@ -68,11 +73,6 @@ namespace Xwt
 			public void OnRowExpanding (TreePosition position)
 			{
 				((TreeView)Parent).OnRowExpanding (new TreeViewRowEventArgs (position));
-			}
-
-			public void OnRowCollapsed (TreePosition position)
-			{
-				((TreeView)Parent).OnRowCollapsed (new TreeViewRowEventArgs (position));
 			}
 
 			public void OnRowCollapsing (TreePosition position)
@@ -85,17 +85,7 @@ namespace Xwt
 				return Xwt.Backends.DefaultNaturalSizes.TreeView;
 			}
 		}
-		
-		static TreeView ()
-		{
-			MapEvent (TableViewEvent.SelectionChanged, typeof(TreeView), "OnSelectionChanged");
-			MapEvent (TreeViewEvent.RowActivated, typeof(TreeView), "OnRowActivated");
-			MapEvent (TreeViewEvent.RowExpanded, typeof(TreeView), "OnRowExpanded");
-			MapEvent (TreeViewEvent.RowExpanding, typeof(TreeView), "OnRowExpanding");
-			MapEvent (TreeViewEvent.RowCollapsed, typeof(TreeView), "OnRowCollapsed");
-			MapEvent (TreeViewEvent.RowCollapsing, typeof(TreeView), "OnRowCollapsing");
-		}
-	
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Xwt.TreeView"/> class.
 		/// </summary>
@@ -519,6 +509,7 @@ namespace Xwt
 		/// <param name='a'>
 		/// Event arguments
 		/// </param>
+		[MappedEvent(TableViewEvent.SelectionChanged)]
 		protected virtual void OnSelectionChanged (EventArgs a)
 		{
 			if (selectionChanged != null)
@@ -545,6 +536,7 @@ namespace Xwt
 		/// Raises the row activated event.
 		/// </summary>
 		/// <param name="a">The alpha component.</param>
+		[MappedEvent(TreeViewEvent.RowActivated)]
 		protected virtual void OnRowActivated (TreeViewRowEventArgs a)
 		{
 			if (rowActivated != null)
@@ -571,6 +563,7 @@ namespace Xwt
 		/// Raises the row expanding event.
 		/// </summary>
 		/// <param name="a">The alpha component.</param>
+		[MappedEvent(TreeViewEvent.RowExpanding)]
 		protected virtual void OnRowExpanding (TreeViewRowEventArgs a)
 		{
 			if (rowExpanding != null)
@@ -597,6 +590,7 @@ namespace Xwt
 		/// Raises the row expanding event.
 		/// </summary>
 		/// <param name="a">The alpha component.</param>
+		[MappedEvent(TreeViewEvent.RowExpanded)]
 		protected virtual void OnRowExpanded (TreeViewRowEventArgs a)
 		{
 			if (rowExpanded != null)
@@ -620,9 +614,19 @@ namespace Xwt
 		}
 
 		/// <summary>
+		/// Raises the row collapsed event.
+		/// </summary>
+		/// <param name="a">The alpha component.</param>
+		[MappedEvent(TreeViewEvent.RowCollapsed)]
+		protected virtual void OnRowCollapsed(TreeViewRowEventArgs a) {
+			if(rowCollapsed != null)
+				rowCollapsed(this, a);
+		}
+
 		/// Raises the row collapsing event.
 		/// </summary>
 		/// <param name="a">The alpha component.</param>
+		[MappedEvent(TreeViewEvent.RowCollapsing)]
 		protected virtual void OnRowCollapsing (TreeViewRowEventArgs a)
 		{
 			if (rowCollapsing != null)
@@ -645,16 +649,6 @@ namespace Xwt
 			}
 		}
 
-		/// <summary>
-		/// Raises the row collapsing event.
-		/// </summary>
-		/// <param name="a">The alpha component.</param>
-		protected virtual void OnRowCollapsed (TreeViewRowEventArgs a)
-		{
-			if (rowCollapsed != null)
-				rowCollapsed (this, a);
-		}
-
 		EventHandler<TreeViewRowEventArgs> rowCollapsed;
 
 		/// <summary>
@@ -662,12 +656,12 @@ namespace Xwt
 		/// </summary>
 		public event EventHandler<TreeViewRowEventArgs> RowCollapsed {
 			add {
-				BackendHost.OnBeforeEventAdd (TreeViewEvent.RowCollapsed, rowCollapsed);
+				BackendHost.OnBeforeEventAdd(TreeViewEvent.RowCollapsed, rowCollapsed);
 				rowCollapsed += value;
 			}
 			remove {
 				rowCollapsed -= value;
-				BackendHost.OnAfterEventRemove (TreeViewEvent.RowCollapsed, rowCollapsed);
+				BackendHost.OnAfterEventRemove(TreeViewEvent.RowCollapsed, rowCollapsed);
 			}
 		}
 	}

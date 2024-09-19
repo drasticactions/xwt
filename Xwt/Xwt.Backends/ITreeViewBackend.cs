@@ -75,8 +75,8 @@ namespace Xwt.Backends
 		RowActivated,
 		RowExpanding,
 		RowExpanded,
+		RowCollapsed,
 		RowCollapsing,
-		RowCollapsed
 	}
 
 	public interface ITreeViewEventSink: ITableViewEventSink

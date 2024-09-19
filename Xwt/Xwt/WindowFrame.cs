@@ -26,31 +26,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// 
-// WindowFrame.cs
-//  
-// Author:
-//       Lluis Sanchez <lluis@xamarin.com>
-// 
-// Copyright (c) 2011 Xamarin Inc
-// 
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-// 
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-// 
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
 using System;
 using Xwt.Backends;
 
@@ -96,6 +71,16 @@ namespace Xwt
 				Parent.OnShown ();
 			}
 
+			public virtual void OnBecomeKey ()
+			{
+				Parent.OnBecomeKey ();
+			}
+
+			public virtual void OnBecomeMain ()
+			{
+				Parent.OnBecomeMain ();
+			}
+
 			public virtual void OnHidden ()
 			{
 				Parent.OnHidden ();
@@ -110,14 +95,6 @@ namespace Xwt
 			{
 				Parent.OnClosed ();
 			}
-		}
-
-		static WindowFrame ()
-		{
-			MapEvent (WindowFrameEvent.Shown, typeof(WindowFrame), "OnShown");
-			MapEvent (WindowFrameEvent.Hidden, typeof(WindowFrame), "OnHidden");
-			MapEvent (WindowFrameEvent.CloseRequested, typeof(WindowFrame), "OnCloseRequested");
-			MapEvent (WindowFrameEvent.Closed, typeof(WindowFrame), "OnClosed");
 		}
 
 		public WindowFrame ()
@@ -285,6 +262,15 @@ namespace Xwt
 			set { Backend.Opacity = value; }
 		}
 
+		public WindowState WindowState {
+			get { return Backend.WindowState; }
+			set { Backend.WindowState = value; }
+		}
+
+		public Rectangle RestoreBounds {
+			get { return Backend.RestoreBounds; }
+		}
+
 		public bool HasFocus {
 			get { return Backend.HasFocus; }
 		}
@@ -333,6 +319,7 @@ namespace Xwt
 			Backend.Present ();
 		}
 
+		[MappedEvent(WindowFrameEvent.Shown)]
 		protected virtual void OnShown ()
 		{
 			if(shown != null)
@@ -344,6 +331,7 @@ namespace Xwt
 			Visible = false;
 		}
 
+		[MappedEvent(WindowFrameEvent.Hidden)]
 		protected virtual void OnHidden ()
 		{
 			if (hidden != null)
@@ -367,7 +355,8 @@ namespace Xwt
 		/// <summary>
 		/// Called to check if the window can be closed
 		/// </summary>
-		/// <returns><c>true</c> if the window can be closed, <c>false</c> otherwise</returns>
+		/// <returns><c>true<c> if the window can be closed, <c>false</c> otherwise</returns>
+		[MappedEvent(WindowFrameEvent.CloseRequested)]
 		protected virtual bool OnCloseRequested ()
 		{
 			if (closeRequested == null)
@@ -383,6 +372,7 @@ namespace Xwt
 		/// <remarks>
 		/// This method is not called when the window is disposed, only when explicitly closed (either by code or by the user)
 		/// </remarks>
+		[MappedEvent(WindowFrameEvent.Closed)]
 		protected virtual void OnClosed ()
 		{
 			if (closed != null)
@@ -403,7 +393,7 @@ namespace Xwt
 		internal virtual Rectangle BackendBounds {
 			get {
 				BackendHost.EnsureBackendLoaded ();
-				return new Rectangle (location, size);
+				return new Rectangle(location, size);
 			}
 			set {
 				size = value.Size;
@@ -422,6 +412,14 @@ namespace Xwt
 				if (boundsChanged != null)
 					boundsChanged (this, a);
 			}
+		}
+
+		protected virtual void OnBecomeKey ()
+		{
+		}
+		
+		protected virtual void OnBecomeMain ()
+		{
 		}
 		
 		internal void Reallocate ()

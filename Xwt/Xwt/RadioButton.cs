@@ -54,13 +54,6 @@ namespace Xwt
 			}
 		}
 		
-		static RadioButton ()
-		{
-			MapEvent (RadioButtonEvent.Clicked, typeof(RadioButton), "OnClicked");
-			MapEvent (RadioButtonEvent.ActiveChanged, typeof(RadioButton), "OnActiveChanged");
-			MapEvent (RadioButtonEvent.ActiveChanged, typeof(RadioButton), "OnActivated");
-		}
-		
 		public RadioButton ()
 		{
 		}
@@ -141,18 +134,21 @@ namespace Xwt
 			}
 		}
 		
+		[MappedEvent(RadioButtonEvent.Clicked)]
 		protected virtual void OnClicked (EventArgs e)
 		{
 			if (clicked != null)
 				clicked (this, e);
 		}
 		
+		[MappedEvent(RadioButtonEvent.ActiveChanged)]
 		protected virtual void OnActiveChanged (EventArgs e)
 		{
 			if (activeChanged != null)
 				activeChanged (this, e);
 		}
 
+		[MappedEvent(RadioButtonEvent.ActiveChanged)]
 		protected virtual void OnActivated (EventArgs e)
 		{
 			if (activeSet != null)

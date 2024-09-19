@@ -50,6 +50,7 @@ namespace Xwt
 				return args.Handled;
 			}
 
+			[MappedEvent(WebViewEvent.Loading)]
 			public void OnLoading ()
 			{
 				((WebView)Parent).OnLoading (EventArgs.Empty);
@@ -64,14 +65,6 @@ namespace Xwt
 			{
 				((WebView)Parent).OnTitleChanged (EventArgs.Empty);
 			}
-		}
-
-		static WebView ()
-		{
-			MapEvent (WebViewEvent.Loading, typeof(WebView), "OnLoading");
-			MapEvent (WebViewEvent.Loaded, typeof(WebView), "OnLoaded");
-			MapEvent (WebViewEvent.NavigateToUrl, typeof(WebView), "OnNavigateToUrl");
-			MapEvent (WebViewEvent.TitleChanged, typeof(WebView), "OnTitleChanged");
 		}
 
 		public WebView ()
@@ -202,6 +195,7 @@ namespace Xwt
 			}
 		}
 
+		[MappedEvent(WebViewEvent.Loaded)]
 		protected virtual void OnLoaded (EventArgs e)
 		{
 			if (loaded != null)
@@ -220,6 +214,7 @@ namespace Xwt
 			}
 		}
 
+		[MappedEvent(WebViewEvent.NavigateToUrl)]
 		protected virtual void OnNavigateToUrl (NavigateToUrlEventArgs e)
 		{
 			if (navigateToUrl != null)
@@ -238,6 +233,7 @@ namespace Xwt
 			}
 		}
 
+		[MappedEvent(WebViewEvent.TitleChanged)]
 		protected virtual void OnTitleChanged (EventArgs e)
 		{
 			if (titleChanged != null)

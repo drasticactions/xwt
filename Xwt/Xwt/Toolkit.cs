@@ -281,7 +281,13 @@ namespace Xwt
 			string assembly = type.Substring (i+1).Trim ();
 			type = type.Substring (0, i).Trim ();
 			try {
-				Assembly asm = Assembly.Load (assembly);
+				Assembly asm = null;
+				try {
+					asm = Assembly.Load (assembly);
+				} catch (System.IO.FileNotFoundException) {
+					// This will happen when assemblies are merged for deployment
+					asm = Assembly.GetExecutingAssembly();
+				}
 				if (asm != null) {
 					Type t = asm.GetType (type);
 					if (t != null) {
@@ -404,6 +410,10 @@ namespace Xwt
 			ValidateObject (image);
 			return backend.GetNativeImage (image);
 		}
+		
+		public object GetNativeWindow (Window window) {
+			return window.WindowBackend;
+		}
 
 		/// <summary>
 		/// Creates a native toolkit object.
@@ -524,7 +534,7 @@ namespace Xwt
 		/// Invokes an action after the user code has been processed.
 		/// </summary>
 		/// <param name="a">The action to invoke after processing user code.</param>
-		internal void InvokePlatformCode (Action a)
+		public void InvokePlatformCode (Action a)
 		{
 			int prevCount = inUserCode;
 			inUserCode = 1;

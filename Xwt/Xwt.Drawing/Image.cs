@@ -189,6 +189,13 @@ namespace Xwt.Drawing
 			return LoadImage (loader, resource, tagFilter);
 		}
 
+		/// <summary>
+		/// Converts an native image object (NSImage on macOS) to an Image
+		/// </summary>
+		public static Image FromNativeImage(object nativeImage) {
+			return new Image(nativeImage);
+		}
+
 		static Image LoadImage (ImageLoader loader, string fileName, ImageTagSet tagFilter)
 		{
 			var toolkit = Toolkit.CurrentEngine;

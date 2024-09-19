@@ -39,6 +39,8 @@ namespace Xwt.Backends
 		Rectangle VisibleRect { get; }
 		
 		void SetChildSize (Size size);
+
+		void ScrollToPoint(Point point);
 	}
 	
 	public interface IScrollViewEventSink: IWidgetEventSink

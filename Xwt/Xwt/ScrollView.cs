@@ -40,11 +40,6 @@ namespace Xwt
 			{
 				((ScrollView)Parent).OnVisibleRectChanged (EventArgs.Empty);
 			}
-			
-			public override Size GetDefaultNaturalSize ()
-			{
-				return Xwt.Backends.DefaultNaturalSizes.ScrollView;
-			}
 		}
 		
 		protected override BackendHost CreateBackendHost ()
@@ -60,8 +55,16 @@ namespace Xwt
 		{
 			HorizontalScrollPolicy = ScrollPolicy.Automatic;
 			VerticalScrollPolicy = ScrollPolicy.Automatic;
+			// This is a bit of a hack to make Windows scrollbars work correctly again. Not sure why, but if HeightRequest
+			// or WidthRequest is not set, Windows scrollbar does not work as the size of the scrollview expands beyond where
+			// it is visible so there is nothing to scroll to. Cannot be set to a very small value or arrows at ends
+			// of scrollbars do not appear. This seems to have happened since the last merge with the XWT master branch.
+			// This size is also the smallest that a scroll area can be made without adding extra space at the bottom/right
+			// when displayed on macOS.
+			HeightRequest = 20;
+			WidthRequest = 20;
 		}
-		
+
 		public ScrollView (Widget child): this ()
 		{
 			VerifyConstructorCall (this);
@@ -140,6 +143,10 @@ namespace Xwt
 		{
 			if (visibleRectChanged != null)
 				visibleRectChanged (this, e);
+		}
+
+		public void ScrollToPoint(Point point) {
+			Backend.ScrollToPoint(point);
 		}
 	}
 	

@@ -87,7 +87,7 @@ namespace Xwt
 		/// </summary>
 		/// <value>The horizontal spacing.</value>
 		public double HorizontalSpacing {
-			get { return Left + Right; }
+			get { return Math.Max(0, Left + Right); }
 		}
 		
 		/// <summary>
@@ -95,7 +95,7 @@ namespace Xwt
 		/// </summary>
 		/// <value>The vertical spacing.</value>
 		public double VerticalSpacing {
-			get { return Top + Bottom; }
+			get { return Math.Max(0, Top + Bottom); }
 		}
 
 		public bool IsZero {

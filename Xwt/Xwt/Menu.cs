@@ -35,6 +35,32 @@ namespace Xwt
 	public class Menu: XwtComponent
 	{
 		MenuItemCollection items;
+		EventHandler opening;
+		EventHandler closed;
+
+		protected class MenuBackendHost: BackendHost<Menu,IMenuBackend>, IMenuEventSink
+		{
+			protected override void OnBackendCreated ()
+			{
+				base.OnBackendCreated ();
+				Backend.Initialize (this);
+			}
+
+			public void OnOpening ()
+			{
+				Parent.DoOpen ();
+			}
+
+			public void OnClosed()
+			{
+				Parent.DoClose();
+			}
+		}
+
+		protected override Xwt.Backends.BackendHost CreateBackendHost ()
+		{
+			return new MenuBackendHost ();
+		}
 
 		/// <summary>
 		/// Gets or sets the font of the menu.
@@ -66,7 +92,7 @@ namespace Xwt
 			items = new MenuItemCollection (this);
 		}
 		
-		internal IMenuBackend Backend {
+		public IMenuBackend Backend {
 			get { return (IMenuBackend) BackendHost.Backend; }
 		}
 		
@@ -87,9 +113,10 @@ namespace Xwt
 		/// <summary>
 		/// Shows the menu at the current position of the cursor
 		/// </summary>
-		public void Popup ()
+		/// <param name="parentWidget">Widget upon which to base the scale of the menu</param>
+		public virtual void Popup (Widget parentWidget)
 		{
-			Backend.Popup ();
+			Backend.Popup (parentWidget.GetBackend ());
 		}
 
 		/// <summary>
@@ -98,7 +125,7 @@ namespace Xwt
 		/// <param name="parentWidget">Widget upon which to show the menu</param>
 		/// <param name="x">The x coordinate, relative to the widget origin</param>
 		/// <param name="y">The y coordinate, relative to the widget origin</param>
-		public void Popup (Widget parentWidget, double x, double y)
+		public virtual void Popup (Widget parentWidget, double x, double y)
 		{
 			Backend.Popup (parentWidget.GetBackend (), x, y);
 		}
@@ -121,6 +148,53 @@ namespace Xwt
 			if (Items.Count > 0 && Items[Items.Count - 1] is SeparatorMenuItem)
 				Items.RemoveAt (Items.Count - 1);
 		}
+
+		internal virtual void DoOpen ()
+		{
+			OnOpening (EventArgs.Empty);
+		}
+
+		[MappedEvent(MenuEvent.Opening)]
+		protected virtual void OnOpening (EventArgs e)
+		{
+			if(opening != null) {
+				opening(this, e);
+			}
+		}
+
+		public event EventHandler Opening {
+			add {
+				base.BackendHost.OnBeforeEventAdd (MenuEvent.Opening, opening);
+				opening += value;
+			}
+			remove {
+				opening -= value;
+				base.BackendHost.OnAfterEventRemove (MenuEvent.Opening, opening);
+			}
+		}
+
+		internal virtual void DoClose() {
+			OnClosed(EventArgs.Empty);
+		}
+
+		[MappedEvent(MenuEvent.Closed)]
+		protected virtual void OnClosed(EventArgs e) {
+			if(closed != null) {
+				closed(this, e);
+			}
+		}
+
+		public event EventHandler Closed {
+			add {
+				base.BackendHost.OnBeforeEventAdd(MenuEvent.Closed, closed);
+				closed += value;
+			}
+			remove {
+				closed -= value;
+				base.BackendHost.OnAfterEventRemove(MenuEvent.Closed, closed);
+			}
+		}
+        
 		protected override void Dispose (bool release_all)
 		{
 			for (int n = 0; n < Items.Count; n++) {

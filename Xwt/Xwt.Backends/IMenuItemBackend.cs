@@ -71,6 +71,18 @@ namespace Xwt.Backends
 		/// </summary>
 		bool Visible { get; set; }
 
+		bool IsSubMenuOpen{ get; set; }
+
+		/// <summary>
+		/// Gets or sets the keyboard shortcut for the menu item.
+		/// </summary>
+		KeyShortcut Shortcut { get; set; }
+
+		/// <summary>
+		/// Gets or sets the tool tip for the menu item.
+		/// </summary>
+		string ToolTip { get; set; }
+
 		/// <summary>
 		/// Sets the formatted text display for this menu item.
 		/// </summary>

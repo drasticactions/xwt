@@ -90,7 +90,12 @@ namespace Xwt
 		{
 			data [type] = null;
 		}
-		
+
+		public void AddType (TransferDataType type, object value)
+		{
+			data [type] = value;
+		}
+
 		/// <summary>
 		/// Registers that the data store contains data of the provided type
 		/// </summary>
@@ -117,6 +122,16 @@ namespace Xwt
 			get {
 				return data.Keys.ToArray ();
 			}
+		}
+
+		// Useful way to pass a URI in an outbound Drag and Drop operation
+		// so when we create a file linking to the URI it can have a filename
+		// based on the Title of the page pointed at
+		public Uri LinkUri { get; private set; }
+		public string LinkTmpPath { get; private set; }
+		public void AddNamedLinkInfo(System.Uri uri, string path) {
+			this.LinkUri = uri;
+			this.LinkTmpPath = path;
 		}
 
 		/// <summary>

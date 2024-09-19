@@ -46,7 +46,7 @@ namespace Xwt
 		public XwtComponent ()
 		{
 			backendHost = CreateBackendHost ();
-			backendHost.Parent = this;
+			backendHost.Parent = this; 
 		}
 		
 		/// <summary>
@@ -86,18 +86,6 @@ namespace Xwt
 		/// A value, that can be used to identify this component
 		/// </summary>
 		virtual public object Tag { get; set; }
-
-		/// <summary>
-		/// Maps an event handler of an Xwt component to an event identifier.
-		/// </summary>
-		/// <param name="eventId">The event identifier (must be valid event enum value
-		/// like <see cref="Xwt.Backends.WidgetEvent"/>, identifying component specific events).</param>
-		/// <param name="type">The Xwt component type.</param>
-		/// <param name="methodName">The <see cref="System.Reflection.MethodInfo.Name"/> of the event handler.</param>
-		protected static void MapEvent (object eventId, Type type, string methodName)
-		{
-			EventHost.MapEvent (eventId, type, methodName);
-		}
 		
 		/// <summary>
 		/// Verifies that the constructor is not called from a sublass.
@@ -258,6 +246,16 @@ namespace Xwt
 		#endregion
 
 
+	}
+
+	public class MappedEventAttribute : Attribute
+	{
+		public object EventId { get; private set; }
+
+		public MappedEventAttribute(object eventId)
+		{
+			EventId = eventId;
+		}
 	}
 }
 

@@ -51,11 +51,6 @@ namespace Xwt
 
 		ButtonStyle style = ButtonStyle.Normal;
 
-		static ColorPicker ()
-		{
-			MapEvent (ColorPickerEvent.ColorChanged, typeof(ColorPicker), "OnColorChanged");
-		}
-
 		public ColorPicker ()
 		{
 		}
@@ -100,6 +95,7 @@ namespace Xwt
 			}
 		}
 
+		[MappedEvent(ColorPickerEvent.ColorChanged)]
 		protected virtual void OnColorChanged (EventArgs args)
 		{
 			if (colorChanged != null)
@@ -149,7 +145,7 @@ namespace Xwt
 			SelectColorDialog dlg = new SelectColorDialog (Title);
 			dlg.SupportsAlpha = SupportsAlpha;
 			dlg.Color = Color;
-			if (dlg.Run (ParentWindow)) {
+			if (dlg.Run (ParentWindow, (c) => {})) {
 				Color = dlg.Color;
 				if (enabledOnColorChanged)
 					EventSink.OnColorChanged ();

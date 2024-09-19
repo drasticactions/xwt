@@ -187,6 +187,8 @@ namespace Xwt.Backends
 		/// Bitmask of possible actions for a drop on this widget
 		/// </param>
 		void SetDragTarget (TransferDataType[] types, DragDropAction dragAction);
+
+		void UnregisterDragTarget();
 		
 		/// <summary>
 		/// Gets or sets the native font of this widget.
@@ -199,6 +201,12 @@ namespace Xwt.Backends
 		/// </summary>
 		/// <value>The background color.</value>
 		Color BackgroundColor { get; set; }
+
+		/// <summary>
+		/// Gets or sets the text color of this widget.
+		/// </summary>
+		/// <value>The text color.</value>
+		Color TextColor { get; set; }
 
 		/// <summary>
 		/// Gets or sets the tooltip text.
@@ -353,7 +361,7 @@ namespace Xwt.Backends
 		/// Notifies the frontend that the widget bounds have changed.
 		/// </summary>
 		void OnBoundsChanged ();
-		
+
 		/// <summary>
 		/// Notifies the frontend about a scroll action.
 		/// </summary>

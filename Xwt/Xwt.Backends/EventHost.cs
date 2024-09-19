@@ -47,7 +47,7 @@ namespace Xwt.Backends
 		/// like <see cref="Xwt.Backends.WidgetEvent"/>, identifying component specific events).</param>
 		/// <param name="type">The Xwt component type.</param>
 		/// <param name="methodName">The <see cref="System.Reflection.MethodInfo.Name"/> of the event handler.</param>
-		public static void MapEvent (object eventId, Type type, string methodName)
+		private static void MapEvent (object eventId, Type type, string methodName)
 		{
 			List<EventMap> events;
 			if (!overridenEventMap.TryGetValue (type, out events)) {
@@ -59,6 +59,10 @@ namespace Xwt.Backends
 				EventId = eventId
 			};
 			events.Add (emap);
+		}
+
+		static EventHost () {
+			DiscoverMappedEvents();
 		}
 
 		/// <summary>
@@ -162,6 +166,32 @@ namespace Xwt.Backends
 					defaultEnabledEvents = GetDefaultEnabledEvents (Parent.GetType (), GetDefaultEnabledEvents);
 				}
 				return defaultEnabledEvents;
+			}
+		}
+
+		private static void DiscoverMappedEvents() {
+			Type mappedEventAttributeType = typeof(MappedEventAttribute);
+			Type xwtComponentType = typeof(XwtComponent);
+
+			List<Type> targetTypes = new List<Type>();
+			Type[] allTypes = Assembly.GetAssembly(xwtComponentType).GetTypes();
+
+			foreach (Type type in allTypes) {
+				if (type.IsSubclassOf(xwtComponentType)) {
+					targetTypes.Add(type);
+				}
+			}
+
+			foreach (Type type in targetTypes) {
+				MethodInfo[] methodInfoCollection = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+				foreach (MethodInfo methodInfo in methodInfoCollection) {
+					MappedEventAttribute attribute = (MappedEventAttribute)Attribute.GetCustomAttribute(methodInfo, mappedEventAttributeType, true);
+
+					if (attribute != null) {
+						MapEvent(attribute.EventId, type, methodInfo.Name);
+					}
+				}
 			}
 		}
 	}

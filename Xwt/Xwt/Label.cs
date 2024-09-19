@@ -51,11 +51,6 @@ namespace Xwt
 			get { return (ILabelBackend) BackendHost.Backend; }
 		}
 
-		static Label ()
-		{
-			MapEvent (LabelEvent.LinkClicked, typeof (Label), "OnLinkClicked");
-		}
-		
 		public Label ()
 		{
 		}
@@ -91,11 +86,6 @@ namespace Xwt
 			set { Backend.Selectable = value; }
 		}
 
-		public Color TextColor {
-			get { return Backend.TextColor; }
-			set { Backend.TextColor = value; }
-		}
-
 		[DefaultValue (Alignment.Start)]
 		public Alignment TextAlignment {
 			get { return Backend.TextAlignment; }
@@ -123,6 +113,7 @@ namespace Xwt
 			}
 		}
 		
+		[MappedEvent(LabelEvent.LinkClicked)]
 		protected virtual void OnLinkClicked (LinkEventArgs e)
 		{
 			if (linkClicked != null)

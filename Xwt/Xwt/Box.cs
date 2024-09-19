@@ -76,8 +76,17 @@ namespace Xwt
 		{
 			children = new ChildrenCollection<BoxPlacement> ((WidgetBackendHost)BackendHost);
 			direction = dir;
+			BoundsChanged += (object sender, EventArgs e) => {
+			 	OnPreferredSizeChanged();
+			};
 		}
-		
+
+		protected override void Dispose(bool disposing) {
+			base.Dispose(disposing);
+			Xwt.Application.Invoke(() => {
+				Clear();
+			});
+		}
 		public double Spacing {
 			get { return spacing; }
 			set {

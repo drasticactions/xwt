@@ -115,10 +115,28 @@ namespace Xwt
 				return TransferDataType.Text;
 			else if (type == typeof(Xwt.Drawing.Image))
 				return TransferDataType.Image;
+			else if (type == typeof(System.Uri))
+				return TransferDataType.Uri;
 			else
 				return FromId (type.AssemblyQualifiedName);
 		}
-		
+
+		public static Type ToType(string transferDataTypeId) {
+			switch(transferDataTypeId) {
+				case "uri":
+					return typeof(System.Uri);
+				case "image":
+					return typeof(Xwt.Drawing.Image);
+				case "text":
+				case "html":
+				case "rtf":
+					return typeof(string);
+				default:
+					// any custom types should be serialized into bytes
+					return typeof(byte[]);
+			}
+		}
+
 		public override bool Equals (object obj)
 		{
 			TransferDataType t = obj as TransferDataType;

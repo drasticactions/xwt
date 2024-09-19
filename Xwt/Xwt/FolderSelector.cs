@@ -47,11 +47,6 @@ namespace Xwt
 			}
 		}
 
-		static FolderSelector ()
-		{
-			MapEvent (FolderSelectorEvent.FolderChanged, typeof (FolderSelector), "OnFolderChanged");
-		}
-
 		public FolderSelector ()
 		{
 		}
@@ -102,6 +97,7 @@ namespace Xwt
 			set { Backend.CanCreateFolders = value; }
 		}
 
+		[MappedEvent(FolderSelectorEvent.FolderChanged)]
 		protected virtual void OnFolderChanged (EventArgs args)
 		{
 			if (folderChanged != null)

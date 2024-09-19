@@ -46,13 +46,21 @@ namespace Xwt
 		Widget content;
 		bool shown;
 		Accessible accessible;
+		
+		public virtual bool StaysOpen {
+			get {
+				return this.Backend.StaysOpen;
+			}
+			set {
+				this.Backend.StaysOpen = value;
+			}
+		}
+
+		public bool IsVisible {
+			get { return this.Backend.IsVisible; }
+		}
 
 		EventHandler closedEvent;
-
-		static Popover ()
-		{
-			MapEvent (PopoverEvent.Closed, typeof(Popover), "OnClosed");
-		}
 
 		protected class PopoverBackendHost: BackendHost<Popover,IPopoverBackend>, IPopoverEventSink
 		{
@@ -182,6 +190,7 @@ namespace Xwt
 				Backend.Dispose ();
 		}
 
+		[MappedEvent(PopoverEvent.Closed)]
 		protected virtual void OnClosed ()
 		{
 			shown = false;

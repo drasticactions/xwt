@@ -58,6 +58,7 @@ namespace Xwt
 		double minWidth = -1, minHeight = -1;
 		double widthRequest = -1, heightRequest = -1;
 		CursorType cursor;
+		private bool isDisposed = false;
 
 		WidgetPlacement alignVertical = WidgetPlacement.Fill;
 		WidgetPlacement alignHorizontal = WidgetPlacement.Fill;
@@ -255,29 +256,6 @@ namespace Xwt
 				throw new InvalidOperationException ("CreateBackendHost for Widget did not return a WidgetBackendHost instance");
 		}
 		
-		static Widget ()
-		{
-			MapEvent (WidgetEvent.DragOverCheck, typeof(Widget), "OnDragOverCheck");
-			MapEvent (WidgetEvent.DragOver, typeof(Widget), "OnDragOver");
-			MapEvent (WidgetEvent.DragDropCheck, typeof(Widget), "OnDragDropCheck");
-			MapEvent (WidgetEvent.DragDrop, typeof(Widget), "OnDragDrop");
-			MapEvent (WidgetEvent.DragLeave, typeof(Widget), "OnDragLeave");
-			MapEvent (WidgetEvent.KeyPressed, typeof(Widget), "OnKeyPressed");
-			MapEvent (WidgetEvent.KeyReleased, typeof(Widget), "OnKeyReleased");
-			MapEvent (WidgetEvent.TextInput, typeof(Widget), "OnTextInput");
-			MapEvent (WidgetEvent.GotFocus, typeof(Widget), "OnGotFocus");
-			MapEvent (WidgetEvent.LostFocus, typeof(Widget), "OnLostFocus");
-			MapEvent (WidgetEvent.MouseEntered, typeof(Widget), "OnMouseEntered");
-			MapEvent (WidgetEvent.MouseExited, typeof(Widget), "OnMouseExited");
-			MapEvent (WidgetEvent.ButtonPressed, typeof(Widget), "OnButtonPressed");
-			MapEvent (WidgetEvent.ButtonReleased, typeof(Widget), "OnButtonReleased");
-			MapEvent (WidgetEvent.MouseMoved, typeof(Widget), "OnMouseMoved");
-			MapEvent (WidgetEvent.DragStarted, typeof(Widget), "OnDragStarted");
-			MapEvent (WidgetEvent.BoundsChanged, typeof(Widget), "OnBoundsChanged");
-			MapEvent (WidgetEvent.PreferredSizeCheck, typeof (Widget), "OnGetPreferredSize");
-			MapEvent (WidgetEvent.MouseScrolled, typeof(Widget), "OnMouseScrolled");
-		}
-		
 		/// <summary>
 		/// Gets the current widget backend.
 		/// </summary>
@@ -321,6 +299,10 @@ namespace Xwt
 						c.Dispose ();
 				}
 			}
+			isDisposed = true;
+			Xwt.Application.Invoke(() => {
+				ResourceManager.FreeResource(Backend);
+			});
 		}
 
 		public Accessible Accessible {
@@ -357,7 +339,7 @@ namespace Xwt
 		/// Sets the parent window.
 		/// </summary>
 		/// <param name="win">An Xwt window containing the widget.</param>
-		internal void SetParentWindow (WindowFrame win)
+		public void SetParentWindow (WindowFrame win)
 		{
 			parentWindow = win;
 		}
@@ -541,7 +523,15 @@ namespace Xwt
 		{
 			Visible = false;
 		}
-		
+
+		/// <summary>
+		/// Allow custom drag/drop regions for custom <see cref="Xwt.Widget"/> that are not the entire widget.
+		/// Inside the widget the cursor can turn on and off to tell the user that they do or do not have
+		/// a valid place to drop file, etc.
+		/// </summary>
+		/// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
+		public Predicate<Point> ShouldPreventDragByLocation = null;
+
 		/// <summary>
 		/// Gets or sets a value indicating whether this <see cref="Xwt.Widget"/> is visible.
 		/// </summary>
@@ -560,7 +550,7 @@ namespace Xwt
 		/// </summary>
 		/// <value><c>true</c> if sensitive; otherwise, <c>false</c>.</value>
 		[DefaultValue (true)]
-		public bool Sensitive {
+		public virtual bool Sensitive {
 			get { return Backend.Sensitive; }
 			set { Backend.Sensitive = value; }
 		}
@@ -769,6 +759,11 @@ namespace Xwt
 			set { Backend.BackgroundColor = value; }
 		}
 
+		public virtual Color TextColor {
+			get { return Backend.TextColor; }
+			set { Backend.TextColor = value; }
+		}
+
 		/// <summary>
 		/// Gets or sets the tooltip text.
 		/// </summary>
@@ -932,6 +927,10 @@ namespace Xwt
 		{
 			Backend.SetDragTarget (types.Select (TransferDataType.FromType).ToArray(), dragAction);
 		}
+
+		public void UnregisterDragDropTarget() {
+			Backend.UnregisterDragTarget();
+		}
 		
 		/// <summary>
 		/// Sets up this widget so that XWT will start a drag operation when the user clicks and drags on this widget.
@@ -987,7 +986,9 @@ namespace Xwt
 		protected virtual void SetScrollAdjustments (ScrollAdjustment horizontal, ScrollAdjustment vertical)
 		{
 		}
-		
+
+
+		[MappedEvent(WidgetEvent.DragOverCheck)]
 		/// <summary>
 		/// Raises the DragOverCheck event, when the mouse is moved over the widget in a drag&amp;drop operation.
 		/// </summary>
@@ -1030,6 +1031,8 @@ namespace Xwt
 				dragOver (this, args);
 		}
 		
+
+		[MappedEvent(WidgetEvent.DragDropCheck)]
 		/// <summary>
 		/// Raises the DragDropCheck event to check if a drop operation is allowed on the widget.
 		/// </summary>
@@ -1052,6 +1055,9 @@ namespace Xwt
 				dragDropCheck (this, args);
 		}
 		
+
+
+		[MappedEvent(WidgetEvent.DragDrop)]
 		/// <summary>
 		/// Raises the DragDrop event when a drop has been performed.
 		/// </summary>
@@ -1070,7 +1076,8 @@ namespace Xwt
 			if (dragDrop != null)
 				dragDrop (this, args);
 		}
-		
+
+		[MappedEvent(WidgetEvent.DragLeave)]
 		/// <summary>
 		/// Raises the DragLeave event.
 		/// </summary>
@@ -1103,6 +1110,7 @@ namespace Xwt
 			return args.DragOperation.GetStartData ();
 		}
 
+		[MappedEvent(WidgetEvent.DragStarted)]
 		/// <summary>
 		/// Raises the DragStarted event.
 		/// </summary>
@@ -1138,6 +1146,7 @@ namespace Xwt
 			}
 		}
 
+		[MappedEvent(WidgetEvent.KeyPressed)]
 		/// <summary>
 		/// Raises the key pressed event.
 		/// </summary>
@@ -1154,6 +1163,7 @@ namespace Xwt
 				keyPressed (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.KeyReleased)]
 		/// <summary>
 		/// Raises the key released event.
 		/// </summary>
@@ -1170,6 +1180,7 @@ namespace Xwt
 				keyReleased (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.TextInput)]
 		/// <summary>
 		/// Raises the preview text input event.
 		/// </summary>
@@ -1186,6 +1197,7 @@ namespace Xwt
 				textInput (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.GotFocus)]
 		/// <summary>
 		/// Raises the got focus event.
 		/// </summary>
@@ -1201,6 +1213,7 @@ namespace Xwt
 				gotFocus (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.LostFocus)]
 		/// <summary>
 		/// Raises the lost focus event.
 		/// </summary>
@@ -1210,12 +1223,14 @@ namespace Xwt
 		/// The event will be enabled in the backend automatically, if <see cref="Xwt.Widget.OnLostFocus"/>
 		/// is overridden.
 		/// </remarks>
+
 		internal protected virtual void OnLostFocus (EventArgs args)
 		{
 			if (lostFocus != null)
 				lostFocus (this, args);
 		}
-		
+
+		[MappedEvent(WidgetEvent.MouseEntered)]
 		/// <summary>
 		/// Called when the mouse enters the widget
 		/// </summary>
@@ -1232,6 +1247,8 @@ namespace Xwt
 				mouseEntered (this, args);
 		}
 		
+
+		[MappedEvent(WidgetEvent.MouseExited)]
 		/// <summary>
 		/// Called when the mouse leaves the widget
 		/// </summary>
@@ -1248,6 +1265,7 @@ namespace Xwt
 				mouseExited (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.ButtonPressed)]
 		/// <summary>
 		/// Raises the button pressed event.
 		/// </summary>
@@ -1264,6 +1282,7 @@ namespace Xwt
 				buttonPressed (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.ButtonReleased)]
 		/// <summary>
 		/// Raises the button released event.
 		/// </summary>
@@ -1279,7 +1298,7 @@ namespace Xwt
 			if (buttonReleased != null)
 				buttonReleased (this, args);
 		}
-
+		[MappedEvent(WidgetEvent.MouseMoved)]
 		/// <summary>
 		/// Raises the mouse moved event.
 		/// </summary>
@@ -1307,6 +1326,7 @@ namespace Xwt
 			OnBoundsChanged ();
 		}
 
+		[MappedEvent(WidgetEvent.MouseScrolled)]
 		/// <summary>
 		/// Raises the mouse scrolled event.
 		/// </summary>
@@ -1337,7 +1357,7 @@ namespace Xwt
 				};
 			}
 		}
-
+		[MappedEvent(WidgetEvent.BoundsChanged)]
 		/// <summary>
 		/// Raises the bounds changed event.
 		/// </summary>
@@ -1398,7 +1418,9 @@ namespace Xwt
 		
 		void IWidgetSurface.Reallocate ()
 		{
-			Reallocate ();
+			if(!isDisposed) {
+				Reallocate();
+			}
 		}
 
 		Size IWidgetSurface.GetPreferredSize (bool includeMargin)
@@ -1500,6 +1522,7 @@ namespace Xwt
 		/// <summary>
 		/// Gets the preferred size of the widget (it must not include the widget margin)
 		/// </summary>
+		[MappedEvent(WidgetEvent.PreferredSizeCheck)]
 		protected virtual Size OnGetPreferredSize (SizeConstraint widthConstraint, SizeConstraint heightConstraint)
 		{
 			return Backend.GetPreferredSize (widthConstraint, heightConstraint);

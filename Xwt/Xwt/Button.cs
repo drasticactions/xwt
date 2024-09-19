@@ -56,11 +56,6 @@ namespace Xwt
 			}
 		}
 		
-		static Button ()
-		{
-			MapEvent (ButtonEvent.Clicked, typeof(Button), "OnClicked");
-		}
-		
 		public Button ()
 		{
 		}
@@ -89,6 +84,13 @@ namespace Xwt
 			return new WidgetBackendHost ();
 		}
 		
+		protected override void Dispose (bool disposing)
+		{
+			base.Dispose (disposing);
+			if(image != null)
+				image.Dispose ();
+		}
+
 		IButtonBackend Backend {
 			get { return (IButtonBackend) BackendHost.Backend; }
 		}
@@ -117,6 +119,15 @@ namespace Xwt
 				var t = FormattedText.FromMarkup (markup);
 				Backend.SetFormattedText (t);
 				OnPreferredSizeChanged ();
+			}
+		}
+
+		public bool IsToggled {
+			get {
+				return Backend.IsToggled;
+			}
+			set {
+				Backend.IsToggled = value;
 			}
 		}
 
@@ -190,6 +201,7 @@ namespace Xwt
 			set { Backend.IsDefault = value; }
 		}
 		
+		[MappedEvent(ButtonEvent.Clicked)]
 		protected virtual void OnClicked (EventArgs e)
 		{
 			if (clicked != null)

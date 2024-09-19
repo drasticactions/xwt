@@ -38,16 +38,6 @@ namespace Xwt
 		Widget container;
 		bool expands;
 
-		static CellView ()
-		{
-			EventHost.MapEvent (WidgetEvent.KeyPressed, typeof(CellView), "OnKeyPressed");
-			EventHost.MapEvent (WidgetEvent.KeyReleased, typeof(CellView), "OnKeyReleased");
-			EventHost.MapEvent (WidgetEvent.MouseEntered, typeof(CellView), "OnMouseEntered");
-			EventHost.MapEvent (WidgetEvent.MouseExited, typeof(CellView), "OnMouseExited");
-			EventHost.MapEvent (WidgetEvent.ButtonPressed, typeof(CellView), "OnButtonPressed");
-			EventHost.MapEvent (WidgetEvent.ButtonReleased, typeof(CellView), "OnButtonReleased");
-			EventHost.MapEvent (WidgetEvent.MouseMoved, typeof(CellView), "OnMouseMoved");
-		}
 
 		/// <summary>
 		/// Gets the default cell view for the provided field type
@@ -333,42 +323,49 @@ namespace Xwt
 			}
 		}
 
+		[MappedEvent(WidgetEvent.KeyPressed)]
 		internal protected virtual void OnKeyPressed (KeyEventArgs args)
 		{
 			if (keyPressed != null)
 				keyPressed (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.KeyReleased)]
 		internal protected virtual void OnKeyReleased (KeyEventArgs args)
 		{
 			if (keyReleased != null)
 				keyReleased (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.MouseEntered)]
 		internal protected virtual void OnMouseEntered ()
 		{
 			if (mouseEntered != null)
 				mouseEntered (this, EventArgs.Empty);
 		}
 
+		[MappedEvent(WidgetEvent.MouseExited)]
 		internal protected virtual void OnMouseExited ()
 		{
 			if (mouseExited != null)
 				mouseExited (this, EventArgs.Empty);
 		}
 
+		[MappedEvent(WidgetEvent.MouseMoved)]
 		internal protected virtual void OnMouseMoved (MouseMovedEventArgs args)
 		{
 			if (mouseMoved != null)
 				mouseMoved (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.ButtonPressed)]
 		internal protected virtual void OnButtonPressed (ButtonEventArgs args)
 		{
 			if (buttonPressed != null)
 				buttonPressed (this, args);
 		}
 
+		[MappedEvent(WidgetEvent.ButtonReleased)]
 		internal protected virtual void OnButtonReleased (ButtonEventArgs args)
 		{
 			if (buttonReleased != null)

@@ -32,9 +32,10 @@ namespace Xwt.Backends
 	public interface IButtonBackend: IWidgetBackend
 	{
 		Color LabelColor { get; set; }
-		bool IsDefault { get; set; }
 		void SetButtonStyle (ButtonStyle style);
 		void SetButtonType (ButtonType type);
+		bool IsToggled { get; set; }
+		bool IsDefault { get; set; }
 		void SetContent (string label, bool useMnemonic, ImageDescription image, ContentPosition position);
 
 		/// <summary>

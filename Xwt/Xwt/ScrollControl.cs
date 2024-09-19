@@ -46,11 +46,6 @@ namespace Xwt
 		{
 			return new ScrollAdjustmentBackendHost ();
 		}
-		
-		static ScrollControl ()
-		{
-			MapEvent (ScrollAdjustmentEvent.ValueChanged, typeof(ScrollAdjustment), "OnValueChanged");
-		}
 
 		internal ScrollControl (IScrollControlBackend backend)
 		{
@@ -148,6 +143,7 @@ namespace Xwt
 			get { return Backend.PageSize; }
 		}
 
+		[MappedEvent(ScrollControlEvent.ValueChanged)]
 		protected virtual void OnValueChanged (EventArgs e)
 		{
 			if (valueChanged != null)

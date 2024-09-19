@@ -99,7 +99,7 @@ namespace Xwt.Drawing
 				return System.Math.Sqrt (Red * .241 + Green * .691 + Blue * .068);
 			}
 		}
-		
+
 		HslColor Hsl {
 			get {
 				if (hsl == null)
@@ -205,7 +205,15 @@ namespace Xwt.Drawing
 				Alpha = ((double)alpha) / 255.0
 			};
 		}
-		
+
+		public static Color FromInt (int thirytwobit) {
+			return FromBytes((byte)((thirytwobit >> 16) & 0xFF), (byte)((thirytwobit >> 8) & 0xFF), (byte)((thirytwobit >> 0) & 0xFF));
+		}
+
+		public int ToInt () {
+			return (int)( (((byte)(r*255.0)) << 16) + (((byte)(g*255.0)) << 8)) + ((byte)(b*255.0));
+		}
+
 		public static Color FromHsl (double h, double s, double l)
 		{
 			return FromHsl (h, s, l, 1);

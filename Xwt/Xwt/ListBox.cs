@@ -64,12 +64,6 @@ namespace Xwt
 			}
 		}
 		
-		static ListBox ()
-		{
-			MapEvent (TableViewEvent.SelectionChanged, typeof(ListView), "OnSelectionChanged");
-			MapEvent (ListViewEvent.RowActivated, typeof(ListView), "OnRowActivated");
-		}
-
 		IListBoxBackend Backend {
 			get { return (IListBoxBackend) BackendHost.Backend; }
 		}
@@ -358,6 +352,7 @@ namespace Xwt
 		/// <param name='args'>
 		/// Arguments.
 		/// </param>
+		[MappedEvent(TableViewEvent.SelectionChanged)]
 		protected virtual void OnSelectionChanged (EventArgs args)
 		{
 			if (selectionChanged != null)
@@ -368,6 +363,7 @@ namespace Xwt
 		/// Raises the row activated event.
 		/// </summary>
 		/// <param name="a">The alpha component.</param>
+		[MappedEvent(ListViewEvent.RowActivated)]
 		protected virtual void OnRowActivated (ListViewRowEventArgs a)
 		{
 			if (rowActivated != null)

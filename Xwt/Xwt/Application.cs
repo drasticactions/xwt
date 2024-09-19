@@ -63,6 +63,20 @@ namespace Xwt
 			private set;
 		}
 
+		public static bool InvokeRequired {
+			get {
+				return UIThread != Thread.CurrentThread;
+			}
+		}
+
+		public static void ExecuteOnApplicationThread(Action action, bool invokeAsync = true) {
+			if(InvokeRequired) {
+				Application.Invoke(action, invokeAsync);
+			} else {
+				action();
+			}
+		}
+
 		public static ITranslationCatalog TranslationCatalog {
 			get {
 				if (translationCatalog == null)
@@ -82,15 +96,6 @@ namespace Xwt
 			if (engine != null)
 				return;
 			Initialize (null);
-		}
-		
-		/// <summary>
-		/// Initialize Xwt with the specified type.
-		/// </summary>
-		/// <param name="type">The toolkit type.</param>
-		public static void Initialize (ToolkitType type)
-		{
-			Initialize (Toolkit.GetBackendType (type), true);
 		}
 
 		public static void Initialize(ToolkitType type, bool initializeToolkit)
@@ -129,7 +134,7 @@ namespace Xwt
 		/// <param name="type">The toolkit type.</param>
 		public static void InitializeAsGuest (ToolkitType type)
 		{
-			Initialize (type);
+			Initialize (type, false);
 			toolkit.ExitUserCode (null);
 		}
 		
@@ -141,7 +146,7 @@ namespace Xwt
 		{
 			if (backendType == null)
 				throw new ArgumentNullException ("backendType");
-			Initialize (backendType);
+			Initialize (backendType, true);
 			toolkit.ExitUserCode (null);
 		}
 
@@ -215,22 +220,37 @@ namespace Xwt
 		/// <param name='action'>
 		/// The action to execute.
 		/// </param>
-		public static void Invoke (Action action)
+		public static void Invoke (Action action, bool invokeAsync = true)
 		{
-			Invoke (action, toolkit);
+			Invoke (action, toolkit, invokeAsync);
 		}
 
-		internal static void Invoke (Action action, Toolkit targetToolkit)
-		{
-			if (action == null)
-				throw new ArgumentNullException (nameof (action));
+		internal static void Invoke(Action action, Toolkit targetToolkit, bool invokeAsync) {
+			if(action == null)
+				throw new ArgumentNullException(nameof(action));
 
-			if (targetToolkit == null)
+			if(targetToolkit == null)
 				targetToolkit = toolkit;
 
-			targetToolkit.Backend.InvokeAsync (delegate {
-				targetToolkit.Invoke (action);
-			});
+			Action d = delegate () {
+				try {
+					targetToolkit.EnterUserCode();
+					action();
+					targetToolkit.ExitUserCode(null);
+				} catch(Exception ex) {
+					targetToolkit.ExitUserCode(ex);
+				}
+			};
+
+			if(invokeAsync) {
+				targetToolkit.Backend.InvokeAsync (delegate {
+				targetToolkit.Invoke (d);
+				});
+			} else {
+				targetToolkit.Backend.Invoke (delegate {
+					targetToolkit.Invoke (d);
+				});
+			}
 		}
 
 		/// <summary>
@@ -386,6 +406,24 @@ namespace Xwt
 			else
 			{
 				Console.WriteLine (ex);
+			}
+		}
+
+		public static event EventHandler Activated;
+		public static void OnActivated()
+		{
+			if (Activated != null)
+			{
+				Activated(null, EventArgs.Empty);
+			}
+		}
+
+		public static event EventHandler Deactivated;
+		public static void OnDeactivated()
+		{
+			if (Deactivated != null)
+			{
+				Deactivated(null, EventArgs.Empty);
 			}
 		}
 	}

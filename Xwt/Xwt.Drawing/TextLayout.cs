@@ -340,7 +340,8 @@ namespace Xwt.Drawing
 
 	public enum TextTrimming {
 		Word,
-		WordElipsis
+		WordElipsis,
+		CharacterEllipsis
 	}
 	
 	class TextLayoutData

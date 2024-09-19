@@ -34,25 +34,21 @@ namespace Xwt
 	{
 		EventHandler changed, activated, selectionChanged;
 		
-		static TextEntry ()
-		{
-			MapEvent (TextEntryEvent.Changed, typeof(TextEntry), "OnChanged");
-			MapEvent (TextEntryEvent.Activated, typeof(TextEntry), "OnActivated");
-			MapEvent (TextEntryEvent.SelectionChanged, typeof(TextEntry), "OnSelectionChanged");
-		}
-		
 		protected new class WidgetBackendHost: Widget.WidgetBackendHost, ITextEntryEventSink
 		{
+			[MappedEvent(TextEntryEvent.Changed)]
 			public void OnChanged ()
 			{
 				((TextEntry)Parent).OnChanged (EventArgs.Empty);
 			}
 
+			[MappedEvent(TextEntryEvent.Activated)]
 			public void OnActivated ()
 			{
 				((TextEntry)Parent).OnActivated (EventArgs.Empty);
 			}
 
+			[MappedEvent(TextEntryEvent.SelectionChanged)]
 			public void OnSelectionChanged ()
 			{
 				((TextEntry)Parent).OnSelectionChanged (EventArgs.Empty);
@@ -151,6 +147,7 @@ namespace Xwt
 			Backend.SetCompletionMatchFunc (matchFunc);
 		}
 
+		[MappedEvent(TextEntryEvent.Changed)]
 		protected virtual void OnChanged (EventArgs e)
 		{
 			if (changed != null)
@@ -185,6 +182,7 @@ namespace Xwt
 			}
 		}
 
+		[MappedEvent(TextEntryEvent.Activated)]
 		protected virtual void OnActivated (EventArgs e)
 		{
 			if (activated != null)
@@ -199,6 +197,12 @@ namespace Xwt
 			remove {
 				activated -= value;
 				BackendHost.OnAfterEventRemove (TextEntryEvent.Activated, activated);
+			}
+		}
+
+		public bool HasKeyboardFocus {
+			get {
+				return this.Backend.HasKeyboardFocus;
 			}
 		}
 	}

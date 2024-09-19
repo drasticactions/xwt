@@ -91,11 +91,6 @@ namespace Xwt
 			}
 		}
 
-		static LinkLabel ()
-		{
-			MapEvent (LinkLabelEvent.NavigateToUrl, typeof (LinkLabel), "OnNavigateToUrl");
-		}
-
 		public LinkLabel ()
 		{
 			Accessible.Role = Accessibility.Role.Link;
@@ -114,6 +109,7 @@ namespace Xwt
 			return new WidgetBackendHost ();
 		}
 
+		[MappedEvent(LinkLabelEvent.NavigateToUrl)]
 		protected virtual void OnNavigateToUrl (NavigateToUrlEventArgs e)
 		{
 			if (navigateToUrl != null)
