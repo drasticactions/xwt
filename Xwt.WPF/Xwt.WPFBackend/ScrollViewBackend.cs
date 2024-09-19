@@ -39,14 +39,24 @@ namespace Xwt.WPFBackend
 		private static readonly ResourceDictionary ScrollViewResourceDictionary;
 		static ScrollViewBackend ()
 		{
-			Uri uri = new Uri ("pack://application:,,,/Xwt.WPF;component/XWT.WPFBackend/ScrollView.xaml");
-			ScrollViewResourceDictionary = (ResourceDictionary) XamlReader.Load (System.Windows.Application.GetResourceStream (uri).Stream);
+			Uri uri = new Uri("pack://application:,,,/Xwt.WPF;component/XWT.WPFBackend/ScrollView.xaml");
+			ScrollViewResourceDictionary = (ResourceDictionary)XamlReader.Load(System.Windows.Application.GetResourceStream(uri).Stream);
+		}
+
+		void ScrollViewer_ScrollChanged(object sender, ScrollChangedEventArgs e) {
+			((IScrollViewEventSink)EventSink).OnVisibleRectChanged();
+		}
+
+		public void ScrollToPoint(Point point) {
+			this.ScrollViewer.ScrollToVerticalOffset(point.Y);
+			this.ScrollViewer.ScrollToHorizontalOffset(point.X);
 		}
 
 		public ScrollViewBackend ()
 		{
 			ScrollViewer = new ExScrollViewer ();
 			ScrollViewer.Resources.MergedDictionaries.Add (ScrollViewResourceDictionary);
+			ScrollViewer.ScrollChanged += ScrollViewer_ScrollChanged;
 			ScrollViewer.GotKeyboardFocus += ScrollViewer_GotKeyboardFocus;
 			ScrollViewer.LostKeyboardFocus += ScrollViewer_LostKeyboardFocus;
 		}

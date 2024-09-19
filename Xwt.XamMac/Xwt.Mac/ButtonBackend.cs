@@ -32,13 +32,14 @@ using ObjCRuntime;
 using Xwt.Accessibility;
 using Xwt.Backends;
 using Xwt.Drawing;
+using NativeHandle = System.IntPtr;
 
 namespace Xwt.Mac
 {
 	public class ButtonBackend: ViewBackend<NSButton,IButtonEventSink>, IButtonBackend
 	{
 		ButtonType currentType;
-		ButtonStyle currentStyle;
+		ButtonStyle currentStyle = ButtonStyle.Normal;
 
 		public ButtonBackend ()
 		{
@@ -49,6 +50,31 @@ namespace Xwt.Mac
 		{
 			ViewObject = new MacButton (EventSink, ApplicationContext);
 			Widget.SetButtonType (NSButtonType.MomentaryPushIn);
+		}
+
+		bool textColorChanged = false;
+		Drawing.Color textColor = Drawing.Colors.Black;
+		public override Xwt.Drawing.Color TextColor {
+			get {
+				//Foundation.NSRange range;
+				//var attributes = Widget.AttributedTitle.GetCoreTextAttributes(0, out range);
+				//CoreGraphics.CGColor color = attributes.ForegroundColor;
+				// HACK: return internally tracked color because retrieving the color from the attributed title using the above code causes a crash
+				return textColor;
+			}
+			set {
+				var paragraphStyle = new NSMutableParagraphStyle() {
+					Alignment = NSTextAlignment.Center
+				};
+				var title = new Foundation.NSAttributedString(
+					Widget.Title,
+					foregroundColor: value.ToNSColor(),
+					paragraphStyle: paragraphStyle
+				);
+				Widget.AttributedTitle = title;
+				textColor = value;
+				textColorChanged = true;
+			}
 		}
 
 		public void EnableEvent (Xwt.Backends.ButtonEvent ev)
@@ -81,6 +107,8 @@ namespace Xwt.Mac
 				Widget.AttributedTitle = ns;
 			} else
 				Widget.Title = label ?? "";
+            if(textColorChanged)
+                TextColor = textColor; // color must be reapplied when title is changed
 			if (string.IsNullOrEmpty (label))
 				imagePosition = ContentPosition.Center;
 			if (!image.IsNull) {
@@ -105,14 +133,13 @@ namespace Xwt.Mac
 		public virtual void SetButtonStyle (ButtonStyle style)
 		{
 			currentStyle = style;
-			if (currentType == ButtonType.Normal)
-			{
+			if (currentType == ButtonType.Normal) {
 				switch (style) {
 				case ButtonStyle.Normal:
 					if (Widget.Image != null
-						|| Frontend.MinHeight > 0
-						|| Frontend.HeightRequest > 0
-						|| Widget.Title.Contains (Environment.NewLine))
+					    || Frontend.MinHeight > 0
+					    || Frontend.HeightRequest > 0
+					    || Widget.Title.Contains (Environment.NewLine))
 						Widget.BezelStyle = NSBezelStyle.RegularSquare;
 					else
 						Widget.BezelStyle = NSBezelStyle.Rounded;
@@ -121,6 +148,20 @@ namespace Xwt.Mac
 				case ButtonStyle.Borderless:
 				case ButtonStyle.Flat:
 					Widget.BezelStyle = NSBezelStyle.ShadowlessSquare;
+					Widget.ShowsBorderOnlyWhileMouseInside = true;
+					break;
+				case ButtonStyle.AlwaysBorderless:
+					Widget.BezelStyle = NSBezelStyle.ShadowlessSquare;
+					Widget.Bordered = false;
+					Widget.SetButtonType (NSButtonType.MomentaryChange);
+					break;
+				case ButtonStyle.CompactFlatMomentary:
+					Widget.BezelStyle = NSBezelStyle.ShadowlessSquare;
+					Widget.ShowsBorderOnlyWhileMouseInside = true;
+					break;
+				case ButtonStyle.CompactFlatToggle:
+					Widget.BezelStyle = NSBezelStyle.ShadowlessSquare;
+					Widget.SetButtonType (NSButtonType.OnOff);
 					Widget.ShowsBorderOnlyWhileMouseInside = true;
 					break;
 				}
@@ -144,6 +185,23 @@ namespace Xwt.Mac
 				break;
 			}
 		}
+
+		public bool IsToggled {
+			get {
+				return Widget.State == NSCellStateValue.On;
+			}
+			set {
+				Widget.State = value ? NSCellStateValue.On : NSCellStateValue.Off;
+				if(currentStyle == ButtonStyle.CompactFlatToggle) {
+					#if MONOMAC
+					Messaging.void_objc_msgSend_bool (Widget.Handle, selSetShowsBorderOnlyWhileMouseInside.Handle, !value);
+					#else
+					Widget.ShowsBorderOnlyWhileMouseInside = !value;
+					#endif
+				}
+			}
+		}
+		
 		bool isDefault;
 		public bool IsDefault {
 			get { return isDefault; }
@@ -165,8 +223,20 @@ namespace Xwt.Mac
 		#endregion
 
 		public override Color BackgroundColor {
-			get { return ((MacButton)Widget).BackgroundColor; }
-			set { ((MacButton)Widget).BackgroundColor = value; }
+			get { 
+				if(this.Widget.Bordered) {
+					return ((MacButton)Widget).BackgroundColor;
+				} else {
+					return base.BackgroundColor;
+				}
+			}
+			set {
+				if(this.Widget.Bordered) {
+					((MacButton)Widget).BackgroundColor = value;
+				} else {
+					base.BackgroundColor = value;
+				}
+			}
 		}
 
 		Color? customLabelColor;
@@ -194,6 +264,7 @@ namespace Xwt.Mac
 		// This event is used by the RadioButton backend to implement radio groups
 		//
 		internal event Action <MacButton> ActivatedInternal;
+		IButtonEventSink eventSink;
 
 		public MacButton (NativeHandle p): base (p)
 		{
@@ -201,6 +272,7 @@ namespace Xwt.Mac
 		
 		public MacButton (IButtonEventSink eventSink, ApplicationContext context)
 		{
+			this.eventSink = eventSink;
 			Cell = new ColoredButtonCell ();
 			BezelStyle = NSBezelStyle.Rounded;
 			Activated += delegate {
@@ -307,6 +379,13 @@ namespace Xwt.Mac
 			{
 				controlView.DrawWithColorTransform(Color, delegate { base.DrawBezelWithFrame (frame, controlView); });
 			}
+		}
+
+		public override void KeyUp(NSEvent theEvent) {
+			base.KeyUp(theEvent);
+			//radio button eventSink could be null
+			if(eventSink != null)
+				eventSink.OnKeyReleased(theEvent.ToXwtKeyEventArgs());
 		}
 
 		public Func<bool> PerformAccessiblePressDelegate { get; set; }

@@ -55,8 +55,8 @@ namespace Xwt.WPFBackend
 		private static readonly ResourceDictionary TreeResourceDictionary;
 		static TreeViewBackend()
 		{
-			Uri uri = new Uri ("pack://application:,,,/Xwt.WPF;component/XWT.WPFBackend/TreeView.xaml");
-			TreeResourceDictionary = (ResourceDictionary)XamlReader.Load (System.Windows.Application.GetResourceStream (uri).Stream);
+			Uri uri = new Uri("pack://application:,,,/Xwt.WPF;component/XWT.WPFBackend/TreeView.xaml");
+			TreeResourceDictionary = (ResourceDictionary)XamlReader.Load(System.Windows.Application.GetResourceStream(uri).Stream);
 		}
 
 		public TreeViewBackend ()

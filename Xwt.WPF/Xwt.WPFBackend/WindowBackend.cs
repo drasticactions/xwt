@@ -35,6 +35,7 @@ using System.Windows.Controls;
 using SW = System.Windows;
 
 using Xwt.Backends;
+using System.ComponentModel;
 
 namespace Xwt.WPFBackend
 {
@@ -50,6 +51,10 @@ namespace Xwt.WPFBackend
 		public WindowBackend ()
 		{
 			base.Window = new WpfWindow ();
+
+			base.Window.StateChanged += (object sender, EventArgs e) => {
+				cachedRestoreBounds = new Rectangle(Window.RestoreBounds.X, Window.RestoreBounds.Y, Window.RestoreBounds.Width, Window.RestoreBounds.Height);
+			};
 			Window.UseLayoutRounding = true;
 			rootPanel = CreateMainGrid ();
 			contentBox = new DockPanel ();
@@ -58,6 +63,12 @@ namespace Xwt.WPFBackend
 			Grid.SetColumn (contentBox, 0);
 			Grid.SetRow (contentBox, 1);
 			rootPanel.Children.Add (contentBox);
+
+			this.Window.Closing += (object sender, CancelEventArgs e) => {
+				if(e.Cancel == false && this.Window.Owner != null) {
+					this.Window.Owner.Focus();
+				}
+			};
 		}
 
 		new WpfWindow Window
@@ -114,7 +125,10 @@ namespace Xwt.WPFBackend
 				base.Decorated = value;
 				if (value)
 					Window.WindowStyle = defaultWindowStyle;
-				Window.AllowsTransparency = Window.WindowStyle == WindowStyle.None && BackgroundColor.Alpha < 1.0;
+				// don't attempt to change transparency unless necessary
+				bool transparency = Window.WindowStyle == WindowStyle.None && BackgroundColor.Alpha < 1.0;
+				if(transparency != Window.AllowsTransparency)
+					Window.AllowsTransparency = transparency;
 			}
 		}
 
@@ -122,11 +136,17 @@ namespace Xwt.WPFBackend
 			get { return mainMenu != null; }
 		}
 
+		public bool FullScreen {
+			get { return false; } // always false on windows
+			set { }
+		}
+
 		public override Rectangle Bounds
 		{
 			get
 			{
-				return Window.ClientBounds;
+				Rectangle bounds = Window.ClientBounds;
+				return new Xwt.Rectangle(bounds.X, bounds.Y, bounds.Width, bounds.Height);
 			}
 			set
 			{
@@ -260,6 +280,12 @@ namespace Xwt.WPFBackend
 
 		public void SetMinSize (Size size)
 		{
+			if(size.Height < 0 && size.Height != -1) {
+				size.Height = 0;
+			}
+			if(size.Width < 0 && size.Width != -1) {
+				size.Width = 0;
+			}
 			if (borderCalculated) {
 				if (size.Width != -1)
 					MinWidth = size.Width + frameBorder.HorizontalSpacing;
@@ -320,6 +346,11 @@ namespace Xwt.WPFBackend
 			return s;
 		}
 
+		protected override void OnActivated(EventArgs e) {
+			base.OnActivated(e);
+			((WindowBackend)Frontend.GetBackend()).EventSink.OnBecomeKey();
+		}
+
 		protected override void OnRenderSizeChanged (SizeChangedInfo sizeInfo)
 		{
 			// Once the physical size of the window has been set we can calculate
@@ -334,12 +365,32 @@ namespace Xwt.WPFBackend
 			if (borderCalculated)
 				return;
 
+			double left = 0;
+			double top = 0;
+			double right = 0;
+			double bottom = 0;
+
 			var c = (FrameworkElement)Content;
-			var p = c.PointToScreenDpiAware (new SW.Point (0, 0));
-			var left = p.X - Left;
-			var top = p.Y - Top;
-			frameBorder = new WidgetSpacing (left, top, windowWidth - c.ActualWidth - left, windowHeight - c.ActualHeight - top);
-			borderCalculated = true;
+
+			if(PresentationSource.FromVisual(c) == null) {
+				// HACK to avoid WIN-4661
+				// This never happens in my testing, but seems to happen in the wild.
+				// This change should avoid the outright failure to start and only has minimal functional
+				// impact (Ex: Windows load a titlebar height lower than they should)
+				Console.WriteLine("WARNING: PresentationSource.FromVisual returned null - border size calculations may be incorrect");
+			} else {
+				if(this.WindowStyle != SW.WindowStyle.None) {
+					var p = c.PointToScreenDpiAware(new SW.Point(0, 0));
+					left = p.X - Left;
+					top = p.Y - Top;
+					right = windowWidth - c.ActualWidth - left;
+					bottom = windowHeight - c.ActualHeight - top;
+				}
+				borderCalculated = true;
+			}
+
+			frameBorder = new WidgetSpacing(left, top, right, bottom);
+
 			Left = initialX - left;
 			Top = initialY - top;
 			SetMinSize (minSizeRequested);

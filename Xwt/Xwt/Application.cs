@@ -98,7 +98,16 @@ namespace Xwt
 			Initialize (null);
 		}
 
-		public static void Initialize(ToolkitType type, bool initializeToolkit)
+        /// <summary>
+        /// Initialize Xwt with the specified type.
+        /// </summary>
+        /// <param name="type">The toolkit type.</param>
+        public static void Initialize(ToolkitType type)
+        {
+            Initialize(Toolkit.GetBackendType(type), true);
+        }
+
+        public static void Initialize(ToolkitType type, bool initializeToolkit)
 		{
 			Initialize(Toolkit.GetBackendType(type), initializeToolkit);
 			toolkit.Type = type;

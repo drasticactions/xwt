@@ -24,7 +24,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 using System;
-using System.Drawing;
 using System.Linq;
 using AppKit;
 using CoreGraphics;
@@ -44,14 +43,44 @@ namespace Xwt.Mac
 		{
 		}
 
-		public WindowFrameBackend (NSWindow window)
-		{
+		public WindowFrameBackend(NSWindow window) {
 			Window = window;
 			// don't replace existing delegates
 			hasExternalDelegate = Window.Delegate != null || Window.WeakDelegate != null;
+			AddEventHandlers();
 		}
 
-		public NSWindow Window { get; set; }
+		private void AddEventHandlers() {
+			Window.WillEnterFullScreen += HandleWindowStateChanging;
+			Window.WillMiniaturize += HandleWindowStateChanging;
+			Window.WillStartLiveResize += HandleWindowStateChanging;
+		}
+
+		private void RemoveEventHandlers() {
+			Window.WillEnterFullScreen -= HandleWindowStateChanging;
+			Window.WillMiniaturize -= HandleWindowStateChanging;
+			Window.WillStartLiveResize -= HandleWindowStateChanging;
+		}
+
+		private void HandleWindowStateChanging(object sender, EventArgs e) {
+			if(this.WindowState == WindowState.Normal) {
+				Rectangle restoreBounds = new Rectangle(Window.Frame.X, Window.Frame.Y, Window.Frame.Width, Window.Frame.Height);
+				restoreBounds.Y = Desktop.Bounds.Height - (restoreBounds.Y + restoreBounds.Height); //Invert Y
+				cachedRestoreBounds = restoreBounds;
+			}
+		}
+
+		NSWindow window;
+		public NSWindow Window {
+			get {
+				return window;
+			}
+ 			set {
+				RemoveEventHandlers();
+				window = value;
+				AddEventHandlers();
+			}
+		}
 
 		object IWindowFrameBackend.Window {
 			get { return Window; }
@@ -146,24 +175,92 @@ namespace Xwt.Mac
 
 		public bool FullScreen {
 			get {
-				if (MacSystemInformation.OsVersion < MacSystemInformation.Lion)
+				if(MacSystemInformation.OsVersion < MacSystemInformation.Lion)
 					return false;
 
 				return (Window.StyleMask & NSWindowStyle.FullScreenWindow) != 0;
 
 			}
 			set {
-				if (MacSystemInformation.OsVersion < MacSystemInformation.Lion)
+				if(MacSystemInformation.OsVersion < MacSystemInformation.Lion)
 					return;
 
-				if (value != ((Window.StyleMask & NSWindowStyle.FullScreenWindow) != 0))
-					Window.ToggleFullScreen (null);
+				if(value != ((Window.StyleMask & NSWindowStyle.FullScreenWindow) != 0))
+					Window.ToggleFullScreen(null);
 			}
 		}
 
 		object IWindowFrameBackend.Screen {
 			get {
 				return Window.Screen;
+			}
+		}
+
+		private Rectangle cachedRestoreBounds;
+
+		public WindowState WindowState {
+			get {
+				if(Window.IsMiniaturized) {
+					return WindowState.Minimized;
+				} else if(Window.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+					return WindowState.FullScreen;
+				} else if(Window.IsZoomed) {
+					return WindowState.Maximized;
+				} else {
+					return WindowState.Normal;
+				}
+			}
+
+			set {
+
+				if(value == WindowState) { return; }
+
+				switch(value) {
+					case WindowState.Minimized:
+						if(Window.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+							Window.ToggleFullScreen(Window);
+						}
+						Window.Miniaturize(Window);
+						break;
+					case WindowState.FullScreen:
+						if(Window.IsMiniaturized) {
+							Window.Deminiaturize(Window);
+						}
+						if(!Window.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+							Window.ToggleFullScreen(Window);
+						}
+						break;
+					case WindowState.Maximized:
+						if(Window.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+							Window.ToggleFullScreen(Window);
+						}
+						if(Window.IsMiniaturized) {
+							Window.Deminiaturize(Window);
+						}
+						if(!Window.IsZoomed) {
+							Window.Zoom(Window);
+						}
+						break;
+					case WindowState.Normal:
+						if(Window.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+							Window.ToggleFullScreen(Window);
+						}
+						if(Window.IsZoomed) {
+							Window.Zoom(Window);
+						}
+						if(Window.IsMiniaturized) {
+							Window.Deminiaturize(Window);
+						}
+						break;
+					default:
+						throw new InvalidOperationException("Invalid window state: " + value);
+				}
+			}
+		}
+
+		public Rectangle RestoreBounds {
+			get {
+				return cachedRestoreBounds;
 			}
 		}
 

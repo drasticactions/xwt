@@ -38,7 +38,7 @@ namespace Xwt.Mac
 	{
 		#region implemented abstract members of DesktopBackend
 
-		internal static MacDesktopBackend Instance;
+		public static MacDesktopBackend Instance;
 		internal static Rectangle desktopBounds;
 
 		public MacDesktopBackend ()
@@ -47,7 +47,7 @@ namespace Xwt.Mac
 			CalcDesktopBounds ();
 		}
 
-		internal void NotifyScreensChanged ()
+		public void NotifyScreensChanged ()
 		{
 			CalcDesktopBounds ();
 			OnScreensChanged ();
@@ -74,7 +74,16 @@ namespace Xwt.Mac
 
 		public override bool IsPrimaryScreen (object backend)
 		{
-			return NSScreen.Screens[0] == (NSScreen) backend;
+			return IsSameScreen(NSScreen.Screens[0], backend);
+		}
+
+		public override bool IsSameScreen (Screen screen, object backend)
+		{
+			return IsSameScreen ((NSScreen)screen.GetBackend(), backend);
+		}
+
+		private bool IsSameScreen (NSScreen screen, object backend) {
+			return screen.IsEqual((NSScreen)backend) && screen.Frame == ((NSScreen)backend).Frame;
 		}
 
 		public override void OpenUrl (string url)

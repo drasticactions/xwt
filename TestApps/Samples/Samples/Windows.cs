@@ -25,6 +25,7 @@
 // THE SOFTWARE.
 using System;
 using Xwt;
+using Xwt.Drawing;
 
 namespace Samples
 {
@@ -145,7 +146,7 @@ namespace Samples
 				SelectColorDialog dlg = new SelectColorDialog ("Select a color");
 				dlg.SupportsAlpha = true;
 				dlg.Color = Xwt.Drawing.Colors.AliceBlue;
-				if (dlg.Run (ParentWindow))
+				if (dlg.Run (ParentWindow, (x) => {  }))
 					MessageDialog.ShowMessage ("A color has been selected!", dlg.Color.ToString ());
 			};
 

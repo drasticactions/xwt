@@ -49,6 +49,40 @@ namespace Xwt.WPFBackend
 		string label;
 		bool useMnemonic;
 
+		private KeyShortcut shortcut;
+		public KeyShortcut Shortcut {
+			get {
+				return shortcut;
+			}
+			set {
+				shortcut = value;
+				menuItem.InputGestureText = GetInputGestureText(shortcut);
+			}
+		}
+
+		private string GetInputGestureText(KeyShortcut shortcut) {
+			StringBuilder sb = new StringBuilder();
+
+			if(shortcut.Modifiers.HasFlag(KeyboardKeyModifiers.Control)) {
+				sb.Append("Ctrl");
+			}
+
+			if(shortcut.Modifiers.HasFlag(KeyboardKeyModifiers.Shift)) {
+				if(sb.Length > 0) { sb.Append("+"); }
+				sb.Append("Shift");
+			}
+
+			if(shortcut.Modifiers.HasFlag(KeyboardKeyModifiers.Alt)) {
+				if(sb.Length > 0) { sb.Append("+"); }
+				sb.Append("Alt");
+			}
+
+			if(sb.Length > 0) { sb.Append("+"); }
+			sb.Append(shortcut.Key.ConfigurationString);
+
+			return sb.ToString();
+		}
+
 		public MenuItemBackend ()
 			: this (new SWC.MenuItem())
 		{
@@ -128,9 +162,19 @@ namespace Xwt.WPFBackend
 			set { this.item.IsEnabled = value; }
 		}
 
+		public string ToolTip {
+			get { return (string)this.menuItem.ToolTip; }
+			set { this.menuItem.ToolTip = value; }
+		}
+
 		public bool Visible {
 			get { return this.item.IsVisible; }
 			set { this.item.Visibility = (value) ? Visibility.Visible : Visibility.Collapsed; }
+		}
+
+		public bool IsSubMenuOpen {
+			get { return this.menuItem.IsSubmenuOpen; }
+			set { this.menuItem.IsSubmenuOpen = value; }
 		}
 
 		public void SetImage (ImageDescription imageBackend)

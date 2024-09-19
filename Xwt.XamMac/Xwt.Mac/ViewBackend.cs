@@ -58,8 +58,16 @@ namespace Xwt.Mac
 		Size lastFittingSize;
 		bool sizeCalcPending = true;
 		bool sensitive = true;
-		bool canGetFocus = true;
+		bool canGetFocus = false;
+		bool mouseDownCanMoveWindow = false;
 		Xwt.Drawing.Color backgroundColor;
+		Xwt.Drawing.Color textColor;
+
+		/// <summary>
+		/// Set to false to prevent NSView.WantsLayer from getting set to true. This drastically lowers
+		/// memory usage with a small performance penalty.
+		/// </summary>
+		public static bool UseLayers = true;
 
 		void IBackend.InitializeBackend (object frontend, ApplicationContext context)
 		{
@@ -171,6 +179,15 @@ namespace Xwt.Mac
 					UpdateSensitiveStatus (s, sensitive && parentIsSensitive);
 			}
 		}
+		
+		public bool MouseDownCanMoveWindow {
+			get {
+				return mouseDownCanMoveWindow;
+			}
+			set {
+				mouseDownCanMoveWindow = value;
+			}
+		}
 
 		public virtual bool CanGetFocus {
 			get { return canGetFocus; }
@@ -216,9 +233,9 @@ namespace Xwt.Mac
 
 		public void SetCursor (CursorType cursor)
 		{
-			if (cursor == CursorType.Arrow)
+			if(cursor == CursorType.Arrow)
 				Cursor = NSCursor.ArrowCursor;
-			else if (cursor == CursorType.Crosshair)
+			else if(cursor == CursorType.Crosshair)
 				Cursor = NSCursor.CrosshairCursor;
 			else if (cursor == CursorType.Hand)
 				Cursor = NSCursor.OpenHandCursor;
@@ -226,17 +243,17 @@ namespace Xwt.Mac
 				Cursor = NSCursor.PointingHandCursor;
 			else if (cursor == CursorType.IBeam)
 				Cursor = NSCursor.IBeamCursor;
-			else if (cursor == CursorType.ResizeDown)
+			else if(cursor == CursorType.ResizeDown)
 				Cursor = NSCursor.ResizeDownCursor;
-			else if (cursor == CursorType.ResizeUp)
+			else if(cursor == CursorType.ResizeUp)
 				Cursor = NSCursor.ResizeUpCursor;
-			else if (cursor == CursorType.ResizeLeft)
+			else if(cursor == CursorType.ResizeLeft)
 				Cursor = NSCursor.ResizeLeftCursor;
-			else if (cursor == CursorType.ResizeRight)
+			else if(cursor == CursorType.ResizeRight)
 				Cursor = NSCursor.ResizeRightCursor;
-			else if (cursor == CursorType.ResizeLeftRight)
+			else if(cursor == CursorType.ResizeLeftRight)
 				Cursor = NSCursor.ResizeLeftRightCursor;
-			else if (cursor == CursorType.ResizeUpDown)
+			else if(cursor == CursorType.ResizeUpDown)
 				Cursor = NSCursor.ResizeUpDownCursor;
 			else if (cursor == CursorType.Invisible)
 				// TODO: load transparent cursor
@@ -405,9 +422,21 @@ namespace Xwt.Mac
 			}
 			set {
 				this.backgroundColor = value;
-				if (Widget.Layer == null)
-					Widget.WantsLayer = true;
-				Widget.Layer.BackgroundColor = value.ToCGColor ();
+				if(UseLayers) {
+					if(Widget.Layer == null)
+						Widget.WantsLayer = true;
+					Widget.Layer.BackgroundColor = value.ToCGColor();
+				}
+				Widget.NeedsDisplay = true;
+			}
+		}
+		
+		public virtual Xwt.Drawing.Color TextColor {
+			get {
+				return this.textColor;
+			}
+			set {
+				this.textColor = value;
 			}
 		}
 		
@@ -517,7 +546,7 @@ namespace Xwt.Mac
 				}
 			}
 		}
-		
+
 		public virtual void DisableEvent (object eventId)
 		{
 			if (eventId is WidgetEvent) {
@@ -525,7 +554,7 @@ namespace Xwt.Mac
 				currentEvents &= ~ev;
 			}
 		}
-		
+
 		static Selector draggingEnteredSel = new Selector ("draggingEntered:");
 		static Selector draggingUpdatedSel = new Selector ("draggingUpdated:");
 		static Selector draggingExitedSel = new Selector ("draggingExited:");
@@ -544,6 +573,11 @@ namespace Xwt.Mac
 
 		static HashSet<Type> typesConfiguredForDragDrop = new HashSet<Type> ();
 		static HashSet<Type> typesConfiguredForFocusEvents = new HashSet<Type> ();
+
+		// class_addmethod docs:
+		// and secret string syntax
+		// https://developer.apple.com/library/mac/documentation/Cocoa/Reference/ObjCRuntimeRef/Reference/reference.html
+		// https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html#//apple_ref/doc/uid/TP40008048-CH100
 
 		static void SetupForDragDrop (Type type)
 		{
@@ -578,26 +612,26 @@ namespace Xwt.Mac
 				}
 			}
 		}
-		
+
 		public void DragStart (DragStartData sdata)
 		{
+			CGRect  frameRelativeToWindow = Widget.ConvertRectToView(Widget.Bounds, null);
+			frameRelativeToWindow = new CGRect(frameRelativeToWindow.X, frameRelativeToWindow.Y + frameRelativeToWindow.Height, frameRelativeToWindow.Width, frameRelativeToWindow.Height); //Invert y
+			var lo = Widget.Window.ConvertRectToScreen(frameRelativeToWindow); //Top left corner of view from the bottom left corner of the screen
+			var ml = NSEvent.CurrentMouseLocation;
+			var pb = NSPasteboard.FromName (NSPasteboard.NSDragPasteboardName);
+			if (pb == null)
+				throw new InvalidOperationException ("Could not get pasteboard");
 			if (sdata.Data == null)
 				throw new ArgumentNullException ("data");
-
-			NSPasteboardItem pasteboardItem = CreatePasteboardItem(sdata.Data);
-
-			var dragItem = new NSDraggingItem(pasteboardItem);
-
-			// Note that the hotspot (sdata.HotX, sdata.HotY) isn't currently supported here, but
-			// current users of this API don't use that anyway
+			InitPasteboard (pb, sdata.Data);
 			var img = (NSImage)sdata.ImageBackend;
-			var frame = new CGRect(0, 0, img.Size.Width, img.Size.Height);
-			dragItem.SetDraggingFrame(frame, img);
-
-			var draggingSource = new DraggingSource (this);
-			Widget.BeginDraggingSession(new[] { dragItem }, NSApplication.SharedApplication.CurrentEvent, draggingSource);
-		}
-		
+			var pos = new CGPoint (ml.X - lo.X - (float)sdata.HotX, lo.Y - ml.Y - (float)sdata.HotY + img.Size.Height);
+			NSDragOperation dragOperation = ConvertAction(sdata.DragAction);
+			DraggingSource draggingSource = new DraggingSource(this, dragOperation);
+			Widget.DragImage (img, pos, new CGSize (0, 0), NSApplication.SharedApplication.CurrentEvent, pb, draggingSource, true);
+		}		
+			
 		public void SetDragSource (TransferDataType[] types, DragDropAction dragAction)
 		{
 		}
@@ -608,6 +642,10 @@ namespace Xwt.Mac
 			var dtypes = types.Select (ToNSPasteboardType).ToArray ();
 			Widget.RegisterForDraggedTypes (dtypes);
 		}
+
+		public void UnregisterDragTarget() {
+			Widget.UnregisterDraggedTypes();
+		}
 		
 		static NSDragOperation DraggingEntered (IntPtr sender, IntPtr sel, IntPtr dragInfo)
 		{
@@ -616,6 +654,9 @@ namespace Xwt.Mac
 		
 		static NSDragOperation DraggingUpdated (IntPtr sender, IntPtr sel, IntPtr dragInfo)
 		{
+		#if MONOMAC
+			return NSDragOperation.None;
+		#else
 			IViewObject ob = Runtime.GetNSObject (sender) as IViewObject;
 			if (ob == null)
 				return NSDragOperation.None;
@@ -624,7 +665,14 @@ namespace Xwt.Mac
 			var di = Runtime.GetINativeObject<INSDraggingInfo> (dragInfo, owns: false);
 			var types = di.DraggingPasteboard.Types.Select (ToXwtDragType).ToArray ();
 			var pos = backend.Widget.ConvertPointFromView (di.DraggingLocation, null).ToXwtPoint ();
-			
+
+			var widget = backend.Frontend;
+			if (widget.ShouldPreventDragByLocation != null) {
+				if (widget.ShouldPreventDragByLocation(pos)) {
+					return NSDragOperation.None;
+				}
+			}
+
 			if ((backend.currentEvents & WidgetEvent.DragOverCheck) != 0) {
 				var args = new DragOverCheckEventArgs (pos, types, ConvertAction (di.DraggingSourceOperationMask));
 				backend.OnDragOverCheck (di, args);
@@ -646,6 +694,7 @@ namespace Xwt.Mac
 			}
 			
 			return di.DraggingSourceOperationMask;
+		#endif
 		}
 		
 		static void DraggingExited (IntPtr sender, IntPtr sel, IntPtr dragInfo)
@@ -661,6 +710,9 @@ namespace Xwt.Mac
 		
 		static bool PrepareForDragOperation (IntPtr sender, IntPtr sel, IntPtr dragInfo)
 		{
+		#if MONOMAC
+			return false;
+		#else
 			IViewObject ob = Runtime.GetNSObject (sender) as IViewObject;
 			if (ob == null)
 				return false;
@@ -680,10 +732,14 @@ namespace Xwt.Mac
 					return false;
 			}
 			return true;
+		#endif
 		}
 		
 		static bool PerformDragOperation (IntPtr sender, IntPtr sel, IntPtr dragInfo)
 		{
+		#if MONOMAC
+			return false;
+		#else
 			IViewObject ob = Runtime.GetNSObject (sender) as IViewObject;
 			if (ob == null)
 				return false;
@@ -701,8 +757,9 @@ namespace Xwt.Mac
 					backend.eventSink.OnDragDrop (args);
 				});
 				return args.Success;
-			} else
-				return false;
+			}
+			return false;
+		#endif
 		}
 		
 		static void ConcludeDragOperation (IntPtr sender, IntPtr sel, IntPtr dragInfo)
@@ -724,38 +781,50 @@ namespace Xwt.Mac
 			});
 		}
 
-		public virtual void OnDragFinished (DragFinishedEventArgs args)
-		{
-			ApplicationContext.InvokeUserCode(delegate {
-				eventSink.OnDragFinished (args);
-			});
+		static bool IsWebURL(string url) {
+			string cmp = url.ToLower();
+			return cmp.StartsWith("http://") || cmp.StartsWith("https://");
 		}
 
-		NSPasteboardItem CreatePasteboardItem (TransferDataSource data)
+
+		void InitPasteboard (NSPasteboard pb, TransferDataSource data)
 		{
-			var typesSupported = new List<string>();
+			//ApplicationContext.InvokeUserCode(delegate {
+			//	eventSink.OnDragFinished (args);
+			//});
 
 			foreach (var t in data.DataTypes) {
-				// Support dragging text internally and externally
-				if (t == TransferDataType.Text) {
-					typesSupported.Add(NSPasteboard.NSPasteboardTypeString);
+				if (t == TransferDataType.Uri) {
+					Uri url = (Uri)data.GetValue(t);
+					if (url.IsFile) {
+						string path = url.ToString().Replace("file://", "");
+						NSArray arr = NSArray.FromStrings(new string[] { path });
+						pb.DeclareTypes(new string[] { NSPasteboard.NSFilenamesType }, null);
+						pb.SetPropertyListForType(arr, NSPasteboard.NSFilenamesType);
+					} else if (IsWebURL(url.ToString())) {
+						pb.AddTypes (new string[] { NSPasteboard.NSStringType }, null);
+						pb.SetStringForType (url.ToString(), NSPasteboard.NSStringType);
+					} else {
+						Console.WriteLine("Check your inputs to your DragOperation and make sure your URL or file looks like what expect");
+					}
 				}
-				// For other well known types, we don't currently support dragging them
-				else if (t == TransferDataType.Uri || t == TransferDataType.Image || t == TransferDataType.Rtf || t == TransferDataType.Html) {
-					;
+				else if (t == TransferDataType.Text) {
+					pb.AddTypes (new string[] { NSPasteboard.NSStringType }, null);
+					pb.SetStringForType ((string)data.GetValue (t), NSPasteboard.NSStringType);
 				}
-				// For internal types, provided serialized data
 				else {
-					typesSupported.Add(ToNSPasteboardType(t));
+					pb.AddTypes(new string[] { t.Id }, null);
+					object obj = data.GetValue(t);
+					byte[] bytes = TransferDataSource.SerializeValue(obj, obj.GetType());
+					NSData nsData = NSData.FromArray(bytes);
+					pb.SetDataForType(nsData, t.Id);
 				}
 			}
+		}
 
-			var pasteboardItem = new NSPasteboardItem();
-
-			var dataProvider = new PasteboardDataProvider(data);
-			pasteboardItem.SetDataProviderForTypes(dataProvider, typesSupported.ToArray());
-
-			return pasteboardItem;
+		static string[] GetItemsForType(NSPasteboard pboard, NSString type) {
+			var items = NSArray.FromArray<NSString>((NSArray)pboard.GetPropertyListForType(type.ToString()));
+			return items.Select(i => i.ToString()).ToArray();
 		}
 
 		static void FillDataStore (TransferDataStore store, NSPasteboard pb, string[] types)
@@ -766,11 +835,12 @@ namespace Xwt.Mac
 				if (t == NSPasteboard.NSStringType)
 					store.AddText (pb.GetStringForType (t));
 				else if (t == NSPasteboard.NSFilenamesType) {
-					string data = pb.GetStringForType (t);
-					XmlDocument doc = new XmlDocument ();
-					doc.XmlResolver = null; // Avoid DTD validation
-					doc.LoadXml (data);
-					store.AddUris (doc.SelectNodes ("/plist/array/string").Cast<XmlElement> ().Select (e => new Uri (e.InnerText)).ToArray ());
+					// pb.GetStringForType (t) returns null on macOS 11.4, so old method of getting the URIs via XML does not work
+					string[] paths = GetItemsForType(pb, NSPasteboard.NSFilenamesType);
+					store.AddUris(paths.Select(p => new Uri(p)).ToArray());
+				} else {
+					NSData data = pb.GetDataForType(t);
+					store.AddValue(TransferDataType.FromId(t), TransferDataSource.DeserializeValue(data.ToArray(), TransferDataType.ToType(t)));
 				}
 			}
 		}
@@ -853,7 +923,7 @@ namespace Xwt.Mac
 			return true;
 		}
 
-		#endregion
+#endregion
 	}
 
 	sealed class WidgetPlacementWrapper: NSView, IViewObject
@@ -924,12 +994,14 @@ namespace Xwt.Mac
 	class DraggingSource : NSObject, INSDraggingSource
 	{
 		WeakReference<ViewBackend> weakViewBackend;
+		NSDragOperation dragOperation;
 
-		public DraggingSource(ViewBackend viewBackend)
+		public DraggingSource(ViewBackend viewBackend, NSDragOperation dragOperation)
 		{
 			weakViewBackend = new WeakReference<ViewBackend>(viewBackend);
+			this.dragOperation = dragOperation;
 		}
-		
+
 		[Export("draggingSession:willBeginAtPoint:")]
 		public void DraggingSessionWillBeginAtPoint(NSDraggingSession session, CGPoint screenPoint)
 		{
@@ -943,11 +1015,11 @@ namespace Xwt.Mac
 				bool deleteSource = operation == NSDragOperation.Move || operation == NSDragOperation.Delete;
 				var args = new DragFinishedEventArgs(deleteSource);
 
-				viewBackend.OnDragFinished(args);
+				viewBackend.EventSink.OnDragFinished(args);
 			}
 		}
 	}
-
+	
 	public class PasteboardDataProvider : NSObject, INSPasteboardItemDataProvider
 	{
 		TransferDataSource dataSource;

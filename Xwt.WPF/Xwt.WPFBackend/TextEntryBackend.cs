@@ -38,6 +38,8 @@ namespace Xwt.WPFBackend
 	public class TextEntryBackend
 		: WidgetBackend, ITextEntryBackend
 	{
+		public static bool SUPPRESS_NATIVE_UNDO_COMMAND = false;
+
 		bool multiline;
 		string placeholderText;
 
@@ -55,9 +57,32 @@ namespace Xwt.WPFBackend
 					layer.Add (Adorner);
 				if (!String.IsNullOrEmpty(placeholderText))
 					Adorner.PlaceholderText = placeholderText;
+				if(!TextBox.IsVisible) {
+					Adorner.Visibility = Visibility.Hidden;
+				}
 			};
+			TextBox.IsVisibleChanged += TextBox_IsVisibleChanged;
 			TextBox.VerticalContentAlignment = VerticalAlignment.Center;
-		}        
+
+			CommandManager.AddPreviewCanExecuteHandler(this.Widget as TextBox, new CanExecuteRoutedEventHandler(OnPreviewCanExecuteHandler));
+		}
+
+		private void TextBox_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e) {
+			if(Adorner != null) {
+				if(TextBox.IsVisible && string.IsNullOrEmpty(TextBox.Text)) {
+					Adorner.Visibility = Visibility.Visible;
+				} else {
+					Adorner.Visibility = Visibility.Hidden;
+				}
+			}
+		}
+
+		private void OnPreviewCanExecuteHandler(object sender, CanExecuteRoutedEventArgs e) {
+			if(SUPPRESS_NATIVE_UNDO_COMMAND && (e.Command == ApplicationCommands.Undo || e.Command == ApplicationCommands.Redo)) {
+				e.CanExecute = false;
+				e.Handled = true;
+			}
+		}
 
 		protected override double DefaultNaturalWidth
 		{
@@ -97,6 +122,24 @@ namespace Xwt.WPFBackend
 		{
 			get { return TextBox.ShowFrame; }
 			set { TextBox.ShowFrame = value; }
+		}
+
+		public override Drawing.Color TextColor {
+			get {
+				return this.TextBox.Foreground.ToXwtColor();
+			}
+			set {
+				this.TextBox.Foreground = new SolidColorBrush(value.ToWpfColor());
+			}
+		}
+
+		public override Drawing.Color BackgroundColor {
+			get {
+				return this.TextBox.Background.ToXwtColor();
+			}
+			set {
+				this.TextBox.Background = new SolidColorBrush(value.ToWpfColor());
+			}
 		}
 
 		public int CursorPosition {
@@ -230,9 +273,21 @@ namespace Xwt.WPFBackend
 			Context.InvokeUserCode (EventSink.OnChanged);
 		}
 
+		public new void SetFocus() {
+			base.SetFocus();
+			if (!string.IsNullOrEmpty(TextBox.Text)) {
+				TextBox.SelectionStart = TextBox.Text.Length;
+				TextBox.SelectionLength = 0;
+			}
+		}
+
 		private void OnSelectionChanged (object s, EventArgs e)
 		{
 			Context.InvokeUserCode (EventSink.OnSelectionChanged);
+		}
+
+		public bool HasKeyboardFocus {
+			get { return Widget.IsKeyboardFocused; }
 		}
 	}
 }

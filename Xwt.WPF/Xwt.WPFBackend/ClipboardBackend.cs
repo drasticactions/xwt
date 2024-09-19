@@ -25,38 +25,123 @@
 // THE SOFTWARE.
 
 using System;
-using System.Threading;
+using System.Collections.Specialized;
+using System.IO;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Xwt.Backends;
 using WindowsClipboard = System.Windows.Clipboard;
 
 namespace Xwt.WPFBackend
 {
 	public class WpfClipboardBackend
-		: ClipboardBackend
-	{
-		public override void Clear ()
-		{
-			WindowsClipboard.Clear();
+		: ClipboardBackend {
+
+		// Clipboard may be locked by another process. In order to overcome this, it can be queried repeatedly.
+		// See https://stackoverflow.com/questions/12769264/openclipboard-failed-when-copy-pasting-data-from-wpf-datagrid
+		// And https://www.infragistics.com/community/forums/f/ultimate-ui-for-wpf/35379/failed-to-copy-clipbrd_e_cant_open
+		// The wrapper below implements retry logic that should make it more reliable.
+		const int MaxRetries = 10;
+		const int SleepTime = 10;
+		private static void CatchExceptionsAndRetry(Action action) {
+			int retryCount = 0;
+			Exception exception = null;
+			while(retryCount < MaxRetries) {
+				try {
+					action.Invoke();
+					return;
+				} catch(Exception e) {
+					exception = e;
+					if(exception.Message.Contains("CLIPBRD_E_BAD_DATA")) {
+						// do not retry
+						break;
+					}
+					System.Threading.Thread.Sleep(SleepTime);
+					retryCount++;
+				}
+			}
+
+			throw exception;
 		}
 
-		public override void SetData (TransferDataType type, Func<object> dataSource)
-		{
-			if (type == null)
-				throw new ArgumentNullException ("type");
-			if (dataSource == null)
-				throw new ArgumentNullException ("dataSource");
+		public override void Clear() {
+			CatchExceptionsAndRetry(() => {
+				WindowsClipboard.Clear();
+			});
+		}
+
+		
+		private void SetClipboardMultipleFormats(string text, string textHtml, Xwt.Drawing.Image image) {
+
+			// WIN-9879 indicates that the Keza clipboard code is more robust that the XWT clipboard code and so
+			// this method was imported in from Keza.Windows.WindowsClipboardHelper on Oct 12, 2023.
+			
+			DataObject dataObject = new DataObject();
+			if(text != null) {
+				dataObject.SetText(text);
+			}
+			if(textHtml != null) {
+				dataObject.SetData(DataFormats.Html, GenerateCFHtml(textHtml));
+			}
+			if(image != null) {
+				var src = image.ToBitmap().GetBackend() as WpfImage;
+				var imageSource = src.MainFrame;
+				BitmapSource bitmapSource = ConvertToBitmapSource(imageSource);
+				dataObject.SetImage(bitmapSource);
+			}
+
+			CatchExceptionsAndRetry(() => {
+				WindowsClipboard.SetDataObject(dataObject);
+			});
+		}
+		
+		private BitmapSource ConvertToBitmapSource(ImageSource imageSource) {
+			if(imageSource is BitmapSource) {
+				return imageSource as BitmapSource;
+			} else {
+				// Create a RenderTargetBitmap and draw the ImageSource onto it.
+				RenderTargetBitmap rtb = new RenderTargetBitmap((int)imageSource.Width, (int)imageSource.Height, 96, 96, PixelFormats.Pbgra32);
+				DrawingVisual drawingVisual = new DrawingVisual();
+
+				using(System.Windows.Media.DrawingContext drawingContext = drawingVisual.RenderOpen()) {
+					drawingContext.DrawImage(imageSource, new Rect(0, 0, imageSource.Width, imageSource.Height));
+				}
+
+				rtb.Render(drawingVisual);
+				return rtb;
+			}
+		}
+
+		
+		public override void SetData(TransferDataType type, Func<object> dataSource, bool cleanClipboardFirst = true) {
+			if(type == null)
+				throw new ArgumentNullException("type");
+			if(dataSource == null)
+				throw new ArgumentNullException("dataSource");
+
+			if(cleanClipboardFirst) {
+				Clear();
+			}
+
 			if (type == TransferDataType.Html) {
-				WindowsClipboard.SetData (type.ToWpfDataFormat (), GenerateCFHtml (dataSource ().ToString ()));
+				SetClipboardMultipleFormats(null, dataSource().ToString(), null);
 			} else if (type == TransferDataType.Image) {
 				var img = dataSource() as Xwt.Drawing.Image;
-				if (img != null)
-				{
-					var src = img.ToBitmap().GetBackend() as WpfImage;
-					WindowsClipboard.SetData (type.ToWpfDataFormat (), src.MainFrame);
+				if (img != null) {
+					SetClipboardMultipleFormats(null, null, img);
 				}
+			} else if(type == TransferDataType.Uri) {
+				CatchExceptionsAndRetry(() => {
+					WindowsClipboard.SetFileDropList((StringCollection)(dataSource()));
+				});
+			} else if(type == TransferDataType.Text) {
+				SetClipboardMultipleFormats(dataSource().ToString(), null, null);
 			} else {
-				WindowsClipboard.SetData (type.ToWpfDataFormat (), dataSource ());
+				CatchExceptionsAndRetry(() => {
+					WindowsClipboard.SetData(type.ToWpfDataFormat(), dataSource());
+				});
 			}
 		}
 
@@ -92,7 +177,110 @@ namespace Xwt.WPFBackend
 			if (type == null)
 				throw new ArgumentNullException ("type");
 
-			return WindowsClipboard.ContainsData (type.ToWpfDataFormat ());
+			if (type == TransferDataType.Text) {
+				bool containsFileDropList = false;
+				CatchExceptionsAndRetry(() => {
+					containsFileDropList = WindowsClipboard.ContainsFileDropList();
+				});
+				if(containsFileDropList) {
+					StringCollection stringCollection = null;
+					CatchExceptionsAndRetry(() => {
+						stringCollection = WindowsClipboard.GetFileDropList();
+					});
+					foreach(string s in stringCollection) {
+						return true;
+					}
+				}
+			}
+
+			bool val = false;
+			CatchExceptionsAndRetry(() => {
+				val = WindowsClipboard.ContainsData(type.ToWpfDataFormat());
+			});
+			return val;
+		}
+
+
+		public static BitmapSource TryFixAlphaChannel (BitmapSource bitmapImage) {
+			double dpi = 96;
+			int width = bitmapImage.PixelWidth;
+			int height = bitmapImage.PixelHeight;
+
+			int stride = width * (bitmapImage.Format.BitsPerPixel + 7) / 8;
+			byte[] pixelData = new byte[stride * height];
+			bitmapImage.CopyPixels (pixelData, stride, 0);
+
+			if (bitmapImage.Format == System.Windows.Media.PixelFormats.Bgra32) {
+				bool anyNonZeroAlpha = false;
+				for (int y = 0; y < height; y++) {
+					for (int o = 3; o < stride; o += 4) {
+						// Bgra32, so set the Alpha
+						if (pixelData[y*stride + o] > 0) {
+							anyNonZeroAlpha = true;
+							break;
+						}
+					}
+					if (anyNonZeroAlpha) {
+						break;
+					}
+				}
+				if (!anyNonZeroAlpha) {
+					for (int y = 0; y < height; y++) {
+						for (int o = 3; o < stride; o += 4) {
+							// Bgra32, so set the Alpha
+							pixelData[y*stride + o] = 255;
+						}
+					}
+				}
+			}
+
+			return BitmapSource.Create (width, height, dpi, dpi, bitmapImage.Format, bitmapImage.Palette, pixelData, stride);
+		}
+
+		public static BitmapSource GetBestPossibletAlphaBitmapFromDataObject(System.Windows.IDataObject ob) {
+			var formats = ob.GetFormats();
+			BitmapSource bmp = null;
+
+			foreach (string f in formats) {
+				if (f != "PNG" && f != "image/png") { // only PNG (GIMP) and image/png (haven't seen this in the wild but could be useful)
+					continue;
+				}
+				var it = ob.GetData(f);
+				var ms = it as MemoryStream;
+				if (ms != null) {
+					BitmapImage result = new BitmapImage();
+					result.BeginInit();
+					// According to MSDN, "The default OnDemand cache option retains access to the stream until the image is needed."
+					// Force the bitmap to load right now so we can dispose the stream.
+					result.CacheOption = BitmapCacheOption.OnLoad;
+					result.StreamSource = ms;
+					result.EndInit();
+					result.Freeze();
+					bmp = result;
+					break;
+				}
+			}
+
+			if (bmp == null) {
+				foreach (string f in formats) {
+					if (!f.ToLower().Contains("bitmap")) {
+						continue;
+					}
+					var obj = ob.GetData(f) as BitmapSource;
+					if (obj != null) {
+						bmp = obj;
+						break;
+					}
+				}
+			}
+
+			if (bmp == null) {
+				CatchExceptionsAndRetry(() => {
+					bmp = WindowsClipboard.GetImage();
+				});
+			}
+			bmp = TryFixAlphaChannel(bmp);
+			return bmp;
 		}
 
 		public override object GetData (TransferDataType type)
@@ -103,11 +291,36 @@ namespace Xwt.WPFBackend
 			if (!IsTypeAvailable (type))
 				return null;
 
-			var data = WindowsClipboard.GetData (type.ToWpfDataFormat ());
+			if (type == TransferDataType.Text) {
+				bool containsFileDropList = false;
+				CatchExceptionsAndRetry(() => {
+					containsFileDropList = WindowsClipboard.ContainsFileDropList();
+				});
+				if(containsFileDropList) {
+					StringCollection stringCollection = null;
+					CatchExceptionsAndRetry(() => {
+						stringCollection = WindowsClipboard.GetFileDropList();
+					});
+					foreach(string s in stringCollection) {
+						return "file://" + s;
+					}
+				}
+			}
 
-			if (type == TransferDataType.Image)
-				return ApplicationContext.Toolkit.WrapImage(ImageHandler.LoadFromImageSource((System.Windows.Media.ImageSource)data));
-			return data;
+			if(type == TransferDataType.Image) {
+				IDataObject ob = null;
+				CatchExceptionsAndRetry(() => {
+					ob = WindowsClipboard.GetDataObject();
+				});
+				var bmp = GetBestPossibletAlphaBitmapFromDataObject(ob);
+				return ApplicationContext.Toolkit.WrapImage(bmp);
+			}
+
+			object result = null;
+			CatchExceptionsAndRetry(() => {
+				result = WindowsClipboard.GetData(type.ToWpfDataFormat());
+			});
+			return result;
 		}
 
 		public override IAsyncResult BeginGetData (TransferDataType type, AsyncCallback callback, object state)

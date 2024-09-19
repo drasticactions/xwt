@@ -88,8 +88,9 @@ namespace Xwt.WPFBackend
 				((ITreeViewEventSink)view.Backend.EventSink).OnRowCollapsing (node);
 			});
 			base.OnCollapsed(e);
-			view.Backend.Context.InvokeUserCode (delegate {
-				((ITreeViewEventSink)view.Backend.EventSink).OnRowCollapsed (node);
+
+			view.Backend.Context.InvokeUserCode(delegate {
+				((ITreeViewEventSink)view.Backend.EventSink).OnRowCollapsed(node);
 			});
 		}
 

@@ -106,6 +106,10 @@ namespace Xwt.Mac
 
 		public string CurrentFolder {
 			get {
+				if(Panel.DirectoryUrl == null) {
+					// if "recents" or other virtual folder was selected this can happen
+					return null;
+				}
 				return Panel.DirectoryUrl.AbsoluteString;
 			}
 			set {
@@ -118,7 +122,7 @@ namespace Xwt.Mac
 				return null;
 			}
 			set {
-
+				Panel.AllowedFileTypes = value.Patterns.ToArray();
 			}
 		}
 

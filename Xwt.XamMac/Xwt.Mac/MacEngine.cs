@@ -120,6 +120,7 @@ namespace Xwt.Mac
 			RegisterBackend <Xwt.Backends.IPopoverBackend, PopoverBackend> ();
 			RegisterBackend <Xwt.Backends.ISelectFolderDialogBackend, SelectFolderDialogBackend> ();
 			RegisterBackend <Xwt.Backends.IOpenFileDialogBackend, OpenFileDialogBackend> ();
+			RegisterBackend <Xwt.Backends.ISaveFileDialogBackend, SaveFileDialogBackend> ();
 			RegisterBackend <Xwt.Backends.ClipboardBackend, MacClipboardBackend> ();
 			RegisterBackend <Xwt.Backends.DesktopBackend, MacDesktopBackend> ();
 			RegisterBackend <Xwt.Backends.IMenuButtonBackend, MenuButtonBackend> ();
@@ -137,6 +138,7 @@ namespace Xwt.Mac
 			RegisterBackend <Xwt.Backends.IColorPickerBackend, ColorPickerBackend> ();
 			RegisterBackend <Xwt.Backends.ICalendarBackend,CalendarBackend> ();
 			RegisterBackend <Xwt.Backends.ISelectFontDialogBackend, SelectFontDialogBackend> ();
+			RegisterBackend <Xwt.Backends.ISelectColorDialogBackend, SelectColorDialogBackend> (); 
 			RegisterBackend <Xwt.Backends.IAccessibleBackend, AccessibleBackend> ();
 			RegisterBackend <Xwt.Backends.IPopupWindowBackend, PopupWindowBackend> ();
 			RegisterBackend <Xwt.Backends.IUtilityWindowBackend, PopupWindowBackend> ();
@@ -173,6 +175,16 @@ namespace Xwt.Mac
 				return true;
 			return Messaging.bool_objc_msgSend_IntPtr_IntPtr (self, hijackedSel.Handle, filePath, owner);
 		}
+
+		public override void Invoke(Action action)
+		{
+			if (action == null)
+				throw new ArgumentNullException ("action");
+
+			NSRunLoop.Main.InvokeOnMainThread (delegate {
+				action();
+			});
+		}
 		
 		public override void InvokeAsync (Action action)
 		{
@@ -202,7 +214,7 @@ namespace Xwt.Mac
 		
 		public override object GetNativeWidget (Widget w)
 		{
-			var wb = GetNativeBackend (w);
+			ViewBackend wb = (ViewBackend)Toolkit.GetBackend (w);
 			wb.SetAutosizeMode (true);
 			return wb.Widget;
 		}
@@ -224,7 +236,13 @@ namespace Xwt.Mac
 		public override bool HasNativeParent (Widget w)
 		{
 			var wb = GetNativeBackend (w);
-			return wb.Widget.Superview != null;
+			NSView superView = null;
+			try {
+				superView = wb.Widget.Superview;
+			} catch(Exception) {
+				// sometimes this throws System.Exception: Failed to marshal the Objective-C object
+			}
+			return superView != null;
 		}
 
 		public ViewBackend GetNativeBackend (Widget w)
@@ -289,6 +307,14 @@ namespace Xwt.Mac
 			}
 		}
 
+		private void OnActivated(NSNotification notification) {
+			Xwt.Application.OnActivated();
+		}
+
+		private void OnDeactivated(NSNotification notifcation) {
+			Xwt.Application.OnDeactivated();
+		}
+		
 		public override Rectangle GetScreenBounds (object nativeWidget)
 		{
 			var widget = nativeWidget as NSView;
@@ -318,6 +344,7 @@ namespace Xwt.Mac
 		public event EventHandler Unhidden;
 		public event EventHandler<OpenFilesEventArgs> OpenFilesRequest;
 		public event EventHandler<OpenUrlEventArgs> OpenUrl;
+		public event EventHandler<HandleReopenEventArgs> HandleReopen;
 		public event EventHandler<ShowDockMenuArgs> ShowDockMenu;
 		
 		public AppDelegate (bool launched)
@@ -408,6 +435,14 @@ namespace Xwt.Mac
 			}
 		}
 
+		public override bool ApplicationShouldHandleReopen(NSApplication sender, bool hasVisibleWindows) {
+			if(HandleReopen != null) {
+				var args = new HandleReopenEventArgs(hasVisibleWindows);
+				HandleReopen(NSApplication.SharedApplication, args);
+			}
+			return true;
+		}
+		
 		public override NSMenu ApplicationDockMenu (NSApplication sender)
 		{
 			NSMenu retMenu = null;
@@ -450,6 +485,13 @@ namespace Xwt.Mac
 		}
 	}
 
+	public class HandleReopenEventArgs : EventArgs {
+		public bool HasVisibleWindows { get; set; }
+		public HandleReopenEventArgs(bool hasVisibleWindows) {
+			HasVisibleWindows = hasVisibleWindows;
+		}
+	}
+	
 	public class ShowDockMenuArgs : EventArgs
 	{
 		public NSMenu DockMenu { get; set; }

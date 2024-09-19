@@ -30,6 +30,7 @@ using CoreGraphics;
 using Foundation;
 using ObjCRuntime;
 using Xwt.Backends;
+using NativeHandle = System.IntPtr;
 
 namespace Xwt.Mac
 {
@@ -100,6 +101,8 @@ namespace Xwt.Mac
 			}
 			set {
 				Widget.StringValue = value ?? string.Empty;
+				EventSink.OnChanged ();
+				EventSink.OnSelectionChanged ();
 			}
 		}
 
@@ -155,7 +158,7 @@ namespace Xwt.Mac
 					Widget.Cell.Scrollable = false;
 					Widget.Cell.Wraps = true;
 				} else {
-					Widget.Cell.UsesSingleLineMode = true;
+					Widget.Cell.UsesSingleLineMode = false; //Bug in monomac causes single line mode to display with incorrect vertical alignment
 					Widget.Cell.Scrollable = true;
 					Widget.Cell.Wraps = false;
 				}
@@ -169,6 +172,8 @@ namespace Xwt.Mac
 				return (int)Widget.CurrentEditor.SelectedRange.Location;
 			}
 			set {
+				if (Widget.CurrentEditor == null)
+					return;
 				Widget.CurrentEditor.SelectedRange = new NSRange (value, SelectionLength);
 				HandleSelectionChanged ();
 			}
@@ -181,6 +186,8 @@ namespace Xwt.Mac
 				return (int)Widget.CurrentEditor.SelectedRange.Location;
 			}
 			set {
+				if(Widget.CurrentEditor == null)
+					return;
 				Widget.CurrentEditor.SelectedRange = new NSRange (value, SelectionLength);
 				HandleSelectionChanged ();
 			}
@@ -193,6 +200,8 @@ namespace Xwt.Mac
 				return (int)Widget.CurrentEditor.SelectedRange.Length;
 			}
 			set {
+				if(Widget.CurrentEditor == null)
+					return;
 				Widget.CurrentEditor.SelectedRange = new NSRange (SelectionStart, value);
 				HandleSelectionChanged ();
 			}
@@ -263,25 +272,73 @@ namespace Xwt.Mac
 
 		public override void SetFocus ()
 		{
-			if (Widget.Window != null && CanGetFocus)
-				Widget.Window.MakeFirstResponder (Widget);
+			if(Widget.Window != null && CanGetFocus) {
+				Widget.Window.MakeFirstResponder(Widget);
+				CursorPosition = Text.Length;
+			}
+			
 		}
 
 		public override bool HasFocus {
 			get {
-				return Widget.Window != null && Widget.Window.FirstResponder == Widget;
+				return HasFocusForWindow(Widget.Window);
 			}
+		}
+
+		public bool HasKeyboardFocus {
+			get {
+				return HasFocusForWindow(NSApplication.SharedApplication.KeyWindow);
+			}
+		}
+
+		public bool HasFocusForWindow (NSWindow window) {
+			if(window == null) {
+				return false;
+			}
+			if(window.FirstResponder == Widget) {
+				return true;
+			}
+			NSTextView textView = window.FirstResponder as NSTextView;
+			if(textView != null && textView.WeakDelegate == Widget) {
+				return true;
+			}
+			return false;
 		}
 		#endregion
 
-		public override Drawing.Color BackgroundColor {
+		public override Xwt.Drawing.Color BackgroundColor {
 			get {
 				return Widget.BackgroundColor.ToXwtColor ();
 			}
 			set {
-				Widget.BackgroundColor = value.ToNSColor ();
+				// macOS does not change the color of the background unless the item does not have focus
+				bool startedWithFocus = false;
+				int cursorPosition = -1;
+				if(this.HasKeyboardFocus) {
+					startedWithFocus = true;
+					cursorPosition = this.CursorPosition;
+					this.Widget.ResignFirstResponder();
+				}
+
+				Widget.Cell.BackgroundColor = value.ToNSColor();
 				Widget.Cell.DrawsBackground = true;
 				Widget.Cell.BackgroundColor = value.ToNSColor ();
+				Widget.BackgroundColor = value.ToNSColor();
+
+				if(startedWithFocus) {
+					this.SetFocus();
+					this.CursorPosition = cursorPosition;
+				}
+			}
+		}
+
+		public override Xwt.Drawing.Color TextColor {
+			get {
+				return Widget.TextColor.ToXwtColor();
+			}
+			set {
+				((NSTextFieldCell)Widget.Cell).TextColor = value.ToNSColor();
+				Widget.TextColor = value.ToNSColor();
 			}
 		}
 	}
@@ -305,6 +362,8 @@ namespace Xwt.Mac
 				EventSink = eventSink,
 				Context = context,
 			};
+
+			this.StringValue = "";
 		}
 
 		public NSView View {
@@ -437,10 +496,18 @@ namespace Xwt.Mac
 		{
 			get; set;
 		}
-
+		
 		public ITextEntryEventSink EventSink
 		{
 			get; set;
+		}
+
+		public override string[] CompletionsForPartialWord(NSRange charRange, out nint index) {
+			if (string.IsNullOrEmpty(this.Value)) {
+				index = 0;
+				return new string[] {};
+			}
+			return base.CompletionsForPartialWord(charRange, out index);
 		}
 
 		public override void KeyDown(NSEvent theEvent)
@@ -459,12 +526,13 @@ namespace Xwt.Mac
 				cachedCursorPosition = SelectedRange.Location;
 				Context.InvokeUserCode(delegate {
 					EventSink.OnSelectionChanged();
-					EventSink.OnKeyReleased(theEvent.ToXwtKeyEventArgs());
+					//KeyReleased is already called at Widget Level, do not call again here.
+					//EventSink.OnKeyReleased (theEvent.ToXwtKeyEventArgs ());
 				});
 			}
 			base.KeyUp(theEvent);
 		}
-
+		
 		public override bool BecomeFirstResponder()
 		{
 			var result = base.BecomeFirstResponder();

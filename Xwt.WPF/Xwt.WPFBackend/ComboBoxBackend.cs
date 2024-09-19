@@ -34,6 +34,9 @@ using WindowsSeparator = System.Windows.Controls.Separator;
 using WindowsComboBox = System.Windows.Controls.ComboBox;
 using WindowsOrientation = System.Windows.Controls.Orientation;
 using WindowsComboBoxItem = System.Windows.Controls.ComboBoxItem;
+using System;
+using System.Globalization;
+using System.Windows.Media;
 
 namespace Xwt.WPFBackend
 {
@@ -42,6 +45,9 @@ namespace Xwt.WPFBackend
 	{
 		private static readonly Style ContainerStyle;
 		//private static readonly DataTemplate DefaultTemplate;
+
+		double COMBO_BOX_STARTING_WIDTH = 28D;
+		double longestItemWidth;
 
 		static ComboBoxBackend()
 		{
@@ -67,6 +73,23 @@ namespace Xwt.WPFBackend
 			ComboBox.DisplayMemberPath = ".[0]";
 			//ComboBox.ItemTemplate = DefaultTemplate;
 			ComboBox.ItemContainerStyle = ContainerStyle;
+
+			this.ComboBox.Loaded += ComboBox_Loaded;
+		}
+
+		void ComboBox_Loaded(object sender, RoutedEventArgs e) {
+			double itemWidth = 0;
+			foreach (Xwt.WPFBackend.ValuesContainer item in this.ComboBox.Items)
+			{
+				System.Windows.Media.FormattedText formattedText = new System.Windows.Media.FormattedText(item[0].ToString(), CultureInfo.CurrentCulture, FlowDirection.LeftToRight, 
+					new Typeface(this.ComboBox.FontFamily, this.ComboBox.FontStyle, this.ComboBox.FontWeight, this.ComboBox.FontStretch), this.ComboBox.FontSize, null);
+				float formattedTextWidth = (float)formattedText.WidthIncludingTrailingWhitespace;
+				if (formattedTextWidth > itemWidth)
+				{
+					itemWidth = formattedTextWidth;
+				}
+			}
+			longestItemWidth = itemWidth;
 		}
 
 		public void SetViews (CellViewCollection views)
@@ -88,6 +111,10 @@ namespace Xwt.WPFBackend
 		{
 			get { return ComboBox.SelectedIndex; }
 			set { ComboBox.SelectedIndex = value; }
+		}
+
+		public bool IsDropDownOpen {
+			get { return this.ComboBox.IsDropDownOpen; }
 		}
 
 		public override void EnableEvent (object eventId)
@@ -154,6 +181,12 @@ namespace Xwt.WPFBackend
 
 			template.VisualTree = root;
 			return template;
+		}
+
+		public override Size GetPreferredSize(SizeConstraint widthConstraint, SizeConstraint heightConstraint) {
+			Size baseSize = base.GetPreferredSize(widthConstraint, heightConstraint);
+			Size outputSize = new Size(longestItemWidth > 0 ? longestItemWidth + COMBO_BOX_STARTING_WIDTH : baseSize.Width, baseSize.Height);
+			return outputSize;
 		}
 	}
 }

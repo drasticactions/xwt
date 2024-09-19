@@ -389,4 +389,3 @@ namespace Xwt.WPFBackend
 		#endregion
 	}
 }
-

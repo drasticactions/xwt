@@ -28,13 +28,59 @@ using System;
 using AppKit;
 using CoreGraphics;
 using Xwt.Backends;
+using System.Collections.Generic;
+
 
 namespace Xwt.Mac
 {
 	public class MenuBackend: NSMenu, IMenuBackend
 	{
+		class MenuDelegate : NSMenuDelegate
+		{
+			IMenuEventSink eventSink;
+			ApplicationContext context;
+
+			public MenuDelegate(IMenuEventSink eventSink, ApplicationContext context)
+			{
+				this.eventSink = eventSink;
+				this.context = context;
+			}
+
+			public override void MenuWillOpen(NSMenu menu)
+			{
+				context.InvokeUserCode (delegate {
+					eventSink.OnOpening ();
+				});
+			}
+
+			public override void MenuDidClose(NSMenu menu)
+			{
+				context.InvokeUserCode (delegate {
+					eventSink.OnClosed ();
+				});
+			}
+
+			#region implemented abstract members of NSMenuDelegate
+
+			public override void MenuWillHighlightItem(NSMenu menu, NSMenuItem item)
+			{
+			}
+
+			#endregion
+		}
+
+		IMenuEventSink eventSink;
+		List<MenuEvent> enabledEvents;
+		ApplicationContext context;
+
+		public void Initialize (IMenuEventSink eventSink)
+		{
+			this.eventSink = eventSink;
+		}
+
 		public void InitializeBackend (object frontend, ApplicationContext context)
 		{
+			this.context = context;
 			AutoEnablesItems = false;
 		}
 
@@ -59,20 +105,34 @@ namespace Xwt.Mac
 
 		public void EnableEvent (object eventId)
 		{
+			if (eventId is MenuEvent) {
+				if(enabledEvents == null) {
+					enabledEvents = new List<MenuEvent>();
+				}
+				enabledEvents.Add ((MenuEvent)eventId);
+				if((MenuEvent)eventId == MenuEvent.Opening) {
+					this.Delegate = new MenuDelegate(eventSink, context);
+				}
+			}
 		}
 
 		public void DisableEvent (object eventId)
 		{
+			if (eventId is MenuEvent) {
+				enabledEvents.Remove ((MenuEvent)eventId);
+				if((MenuEvent)eventId == MenuEvent.Opening) {
+					this.Delegate = null;
+				}
+			}
 		}
 		
-		public void Popup ()
+		public void Popup (IWidgetBackend widget)
 		{
 			var evt = NSApplication.SharedApplication.CurrentEvent;
-			if (evt != null)
+			if (evt != null && evt.Window != null)
 				NSMenu.PopUpContextMenu (this, evt, evt.Window.ContentView);
 			else if (MainWindow?.ContentView != null)
 				Popup (MainWindow.ContentView, MainWindow.MouseLocationOutsideOfEventStream);
-
 		}
 		
 		public void Popup (IWidgetBackend widget, double x, double y)

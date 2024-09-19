@@ -33,10 +33,23 @@ namespace Xwt.WPFBackend
 	public class SaveFileDialogBackend
 		: FileDialogBackend<WindowsSaveFileDialog>, ISaveFileDialogBackend
 	{
-		public override void Initialize (IEnumerable<FileDialogFilter> newFilters, bool multiselect, string initialFileName)
-		{
+		public SaveFileDialogBackend() {
 			this.dialog = new WindowsSaveFileDialog();
-			base.Initialize (newFilters, initialFileName);
 		}
+
+		public void Initialize(IEnumerable<FileDialogFilter> filters, string title) {
+			base.Initialize(filters,"");
+			this.dialog.Title = title;
+		}
+
+		public string FileName {
+			get {
+				return this.dialog.FileName;
+			}
+			set {
+				this.dialog.FileName = value;
+			}
+		}
+
 	}
 }

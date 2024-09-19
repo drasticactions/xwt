@@ -42,10 +42,13 @@ using FontStretch = Xwt.Drawing.FontStretch;
 using FontStyle = Xwt.Drawing.FontStyle;
 using FontWeight = Xwt.Drawing.FontWeight;
 using ImageFormat = Xwt.Drawing.ImageFormat;
+using System.IO;
+using System.Text;
+using System.Linq;
 
 namespace Xwt.WPFBackend
 {
-	internal static class DataConverter
+	public static class DataConverter
 	{
 		//
 		// Rect/Point
@@ -366,14 +369,36 @@ namespace Xwt.WPFBackend
 			foreach (var type in data.DataTypes) {
 				var value = data.GetValue (type);
 
-				if (type == TransferDataType.Text)
+				if (type == TransferDataType.Text) {
 					retval.SetText ((string)value);
+				}
 				else if (type == TransferDataType.Uri) {
-					var uris = new StringCollection ();
-					uris.Add (((Uri)value).LocalPath);
-					retval.SetFileDropList (uris);
+					Uri uri = (Uri)value;
+					if (uri.IsFile) {
+						var uris = new StringCollection ();
+						uris.Add (uri.LocalPath);
+						retval.SetFileDropList (uris);
+					} else {
+						string strOrig = uri.ToString();
+						string str = strOrig + ((char)0);
+						char[] chars = str.ToArray();
+						byte[] bytes = Encoding.UTF8.GetBytes(chars, 0, chars.Length);
+						MemoryStream stream = new MemoryStream(bytes);
+						retval.SetData ("UniformResourceLocator", stream);
+					}
 				} else
 					retval.SetData (type.Id, TransferDataSource.SerializeValue (value, value.GetType()));
+			}
+
+			string anyUri = data.LinkUri != null ? data.LinkUri.ToString() : null;
+			string anyPath = data.LinkTmpPath;
+			if (anyUri != null && anyPath != null) {
+				// write tmp file to disk with /path/to/tmp/Page-Title.url
+				string urlContents = "[InternetShortcut]\nURL=" + anyUri;
+				File.WriteAllText(anyPath, urlContents);
+				StringCollection strCollect = new StringCollection();
+				strCollect.Add(anyPath);
+				retval.SetFileDropList(strCollect);
 			}
 
 			return retval;

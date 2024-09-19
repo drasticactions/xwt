@@ -32,6 +32,7 @@ using Foundation;
 using ObjCRuntime;
 using Xwt.Backends;
 using Xwt.Drawing;
+using NativeHandle = System.IntPtr;
 
 namespace Xwt.Mac
 {
@@ -107,8 +108,13 @@ namespace Xwt.Mac
 		public override void GetMetrics (out Size minSize, out Size decorationSize)
 		{
 			var ps = buttonBox.Surface.GetPreferredSize (true);
-			minSize = new Size (ps.Width + buttonBoxPadding.VerticalSpacing, 0);
-			decorationSize = new Size (0, ps.Height + buttonBoxPadding.HorizontalSpacing);
+			if(buttons.Count > 0) {
+				minSize = new Size(ps.Width + buttonBoxPadding.VerticalSpacing, 0);
+				decorationSize = new Size(0, ps.Height + buttonBoxPadding.HorizontalSpacing);
+			} else {
+				minSize = Size.Zero;
+				decorationSize = Size.Zero;
+			}
 		}
 
 		#region IDialogBackend implementation

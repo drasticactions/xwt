@@ -27,6 +27,9 @@
 using System;
 using Xwt.Backends;
 using System.Windows.Media;
+using System.Windows.Shapes;
+using System.Collections.Generic;
+using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Input;
 
@@ -34,13 +37,47 @@ namespace Xwt.WPFBackend
 {
 	public class PopoverBackend : Backend, IPopoverBackend
 	{
+		const int VERTICAL_MARGIN = 2;
+		const int CARET_WIDTH = 40;
+		const int CARET_HEIGHT = 10;
+		const int BORDER_RADIUS = 7;
+		const int BORDER_PADDING = 7;
+		const int BORDER_THICKNESS = 1;
+		static readonly SolidColorBrush STROKE_BRUSH = Brushes.Gray;
+		static Color BACKGROUND_COLOR;
+		static SolidColorBrush BACKGROUND_BRUSH;
+
+		static PopoverBackend() {
+			if(SystemColors.MenuBarColor.R + SystemColors.MenuBarColor.G + SystemColors.MenuBarColor.B < 380) {
+				BACKGROUND_COLOR = Color.FromRgb(0, 0, 0);
+			} else {
+				BACKGROUND_COLOR = Color.FromRgb(235, 235, 235);
+			}
+			BACKGROUND_BRUSH = new SolidColorBrush(BACKGROUND_COLOR);
+		}
+
+		public bool StaysOpen {
+			get {
+				return NativeWidget.StaysOpen;
+			}
+			set {
+				NativeWidget.StaysOpen = value;
+			}
+		}
+
+		public bool IsVisible {
+			get { return this.NativeWidget.Child.IsVisible; }
+		}
+
 		public Xwt.Popover.Position ActualPosition {
 			get; set;
 		}
 
-		System.Windows.Controls.Border Border {
+		Border Border {
 			get; set;
 		}
+
+		Grid grid;
 
 		public Xwt.Drawing.Color BackgroundColor {
 			get {
@@ -107,11 +144,38 @@ namespace Xwt.WPFBackend
 
 		public PopoverBackend ()
 		{
+
+			grid = new Grid() { 
+				Margin = new Thickness(0, VERTICAL_MARGIN, 0, 0) };
+
+			string xamlCaretPath = string.Format("M 0,{0} C 0,{0} {1},{0} {2},0 C {2},0 {3},{0} {4},{0}", CARET_HEIGHT, CARET_WIDTH / 4, CARET_WIDTH / 2, CARET_WIDTH * 3 / 4, CARET_WIDTH);
+			Geometry caretGeometry = PathGeometry.Parse(xamlCaretPath);
+			Path caretPath = new Path() {
+				Stroke = STROKE_BRUSH,
+				Fill = BACKGROUND_BRUSH,
+				Data = caretGeometry,
+				VerticalAlignment = VerticalAlignment.Top,
+				HorizontalAlignment = HorizontalAlignment.Center
+			};
+
+			string xamlBoundaryPath = string.Format("M 0,{0} L {1},{0}", CARET_HEIGHT + 1, CARET_WIDTH);
+			Geometry boundaryGeometry = PathGeometry.Parse(xamlBoundaryPath);
+			Path boundaryPath = new Path() {
+				Stroke = BACKGROUND_BRUSH,
+				Data = boundaryGeometry,
+				VerticalAlignment = VerticalAlignment.Top,
+				HorizontalAlignment = HorizontalAlignment.Center
+			};
+			
 			Border = new System.Windows.Controls.Border {
-					Padding = new Thickness (15, 10, 15, 15),
-					BorderThickness = new Thickness (1),
-					Margin = new Thickness (10),
-					Effect = new System.Windows.Media.Effects.DropShadowEffect () {
+				BorderBrush = STROKE_BRUSH,
+				CornerRadius = new CornerRadius(BORDER_RADIUS),
+				Padding = new Thickness(BORDER_PADDING),
+				BorderThickness = new Thickness(BORDER_THICKNESS),
+				Margin = new Thickness(0, CARET_HEIGHT - 1, 0, 0),
+				VerticalAlignment = VerticalAlignment.Top,
+				Background = BACKGROUND_BRUSH,
+				Effect = new System.Windows.Media.Effects.DropShadowEffect() {
 					Color = Colors.Black,
 					Direction = 270,
 					BlurRadius = 15,
@@ -119,15 +183,33 @@ namespace Xwt.WPFBackend
 					ShadowDepth = 1,
 				}
 			};
-			Border.SetResourceReference (System.Windows.Controls.Border.BorderBrushProperty,
-			                             SystemColors.ActiveBorderBrushKey);
-			BackgroundColor = Xwt.Drawing.Color.FromBytes (230, 230, 230, 230);
+
+
+			//Set background color of popover
+			BackgroundColor = BACKGROUND_BRUSH.ToXwtColor();
 
 			NativeWidget = new System.Windows.Controls.Primitives.Popup {
 				AllowsTransparency = true,
-				Child = Border,
+				Child = grid,
 				Placement = System.Windows.Controls.Primitives.PlacementMode.Custom,
 				StaysOpen = false,
+				Margin = new System.Windows.Thickness (10),
+			};
+
+			grid.Children.Add(Border);
+			grid.Children.Add(caretPath);
+			grid.Children.Add(boundaryPath);
+
+			NativeWidget.CustomPopupPlacementCallback = (popupSize, targetSize, offset) => {
+				var location = new System.Windows.Point (targetSize.Width / 2 - popupSize.Width / 2, 0);
+				if (ActualPosition == Popover.Position.Top)
+					location.Y = targetSize.Height;
+				else
+					location.Y = -popupSize.Height;
+
+				return new[] {
+					new System.Windows.Controls.Primitives.CustomPopupPlacement (location, System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal)
+				};
 			};
 			NativeWidget.Opened += NativeWidget_Opened;
 			NativeWidget.Closed += NativeWidget_Closed;
@@ -147,11 +229,9 @@ namespace Xwt.WPFBackend
 			NativeWidget.CustomPopupPlacementCallback = (popupSize, targetSize, offset) => {
 				System.Windows.Point location;
 				if (ActualPosition == Popover.Position.Top)
-					location = new System.Windows.Point (positionRect.Left - popupSize.Width / 2,
-					                                     positionRect.Height > 0 ? positionRect.Bottom : targetSize.Height);
+					location = new System.Windows.Point (-child.ScreenBounds.Width / 2 - BORDER_PADDING + positionRect.Right, positionRect.Bottom);
 				else
-					location = new System.Windows.Point (positionRect.Left - popupSize.Width / 2,
-					                                     positionRect.Top - popupSize.Height);
+					location = new System.Windows.Point (positionRect.Left, positionRect.Top - popupSize.Height);
 
 				return new[] {
 					new System.Windows.Controls.Primitives.CustomPopupPlacement (location, System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal)

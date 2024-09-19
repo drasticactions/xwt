@@ -282,7 +282,7 @@ namespace Xwt.Mac
 				{
 					TextLayout.AddTextContainer (TextContainer);
 					TextStorage.AddLayoutManager (TextLayout);
-					TextLayout.GetGlyphRangeForBoundingRect (new CGRect (CGPoint.Empty, TextContainer.Size), TextContainer);
+					TextLayout.EnsureLayoutForBoundingRect (new CGRect (CGPoint.Empty, TextContainer.Size), TextContainer);
 					var s = TextLayout.GetUsedRect (TextContainer);
 					TextStorage.RemoveLayoutManager (TextLayout);
 					TextLayout.RemoveTextContainer (0);
@@ -306,7 +306,7 @@ namespace Xwt.Mac
 				{
 					TextLayout.AddTextContainer (TextContainer);
 					TextStorage.AddLayoutManager (TextLayout);
-					TextLayout.GetGlyphRangeForBoundingRect (new CGRect (CGPoint.Empty, TextContainer.Size), TextContainer);
+					TextLayout.EnsureLayoutForBoundingRect (new CGRect (CGPoint.Empty, TextContainer.Size), TextContainer);
 					var index = TextLayout.GetCharacterIndex (new CGPoint (x, y), TextContainer, out var fraction);
 					TextStorage.RemoveLayoutManager (TextLayout);
 					TextLayout.RemoveTextContainer (0);
@@ -320,8 +320,8 @@ namespace Xwt.Mac
 				{
 					TextLayout.AddTextContainer (TextContainer);
 					TextStorage.AddLayoutManager (TextLayout);
-					TextLayout.GetGlyphRangeForBoundingRect (new CGRect (CGPoint.Empty, TextContainer.Size), TextContainer);
-					var glyphIndex = TextLayout.GetGlyphIndex ((nuint)index);
+					TextLayout.EnsureLayoutForBoundingRect (new CGRect (CGPoint.Empty, TextContainer.Size), TextContainer);
+					var glyphIndex = TextLayout.GlyphAtIndex ((nuint)index);
 					var p = TextLayout.GetLocationForGlyph ((nuint)glyphIndex);
 					TextStorage.RemoveLayoutManager (TextLayout);
 					TextLayout.RemoveTextContainer (0);

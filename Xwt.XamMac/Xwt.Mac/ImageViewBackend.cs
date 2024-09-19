@@ -44,8 +44,10 @@ namespace Xwt.Mac
 
 		public override void Initialize ()
 		{
-			base.Initialize ();
-			ViewObject = new CustomAlignedContainer (EventSink, ApplicationContext, new NSImageView ());
+			base.Initialize();
+			ViewObject = new CustomAlignedContainer (EventSink, ApplicationContext, new NSImageView ()) {
+				ExpandVertically = true
+			};
 		}
 
 		protected override Size GetNaturalSize ()

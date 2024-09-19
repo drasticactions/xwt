@@ -58,6 +58,9 @@ namespace Xwt.WPFBackend
 			if (application == null)
 				application = new System.Windows.Application ();
 
+			application.Activated += application_Activated;
+			application.Deactivated += application_Deactivated;
+
 			application.ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
 			RegisterBackend<IWindowBackend, WindowBackend> ();
@@ -126,6 +129,16 @@ namespace Xwt.WPFBackend
 			RegisterBackend<IAccessibleBackend, AccessibleBackend>();
 		}
 
+		void application_Activated(object sender, EventArgs e)
+		{
+			Xwt.Application.OnActivated();
+		}
+
+		void application_Deactivated(object sender, EventArgs e)
+		{
+			Xwt.Application.OnDeactivated();
+		}
+
 		public override void DispatchPendingEvents()
 		{
 			application.Dispatcher.Invoke ((Action)(() => { }), DispatcherPriority.Background);
@@ -139,6 +152,14 @@ namespace Xwt.WPFBackend
 		public override void ExitApplication ()
 		{
 			application.Shutdown();
+		}
+
+		public override void Invoke (Action action)
+		{
+			if (action == null)
+				throw new ArgumentNullException ("action");
+
+			application.Dispatcher.Invoke (action);
 		}
 
 		public override void InvokeAsync (Action action)

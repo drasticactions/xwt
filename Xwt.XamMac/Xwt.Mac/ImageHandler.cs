@@ -49,6 +49,11 @@ namespace Xwt.Mac
 
 		public override bool DisposeHandleOnUiThread => true;
 
+		public override object LoadFromStream(Stream stream, string name)
+		{
+			return LoadFromStream(stream);
+		}
+
 		public override object LoadFromStream (Stream stream)
 		{
 			return NSImage.FromStream (stream);
@@ -182,6 +187,7 @@ namespace Xwt.Mac
 						return im;
 					}
 				}
+				bitmap.Size = new CGSize((float)width, (float)height);
 				return idesc.Backend;
 			}
 		}

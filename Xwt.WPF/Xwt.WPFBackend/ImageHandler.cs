@@ -42,12 +42,61 @@ namespace Xwt.WPFBackend
 {
 	public class ImageHandler: ImageBackendHandler
 	{
-		public override object LoadFromStream (Stream stream)
+		public override object LoadFromStream(Stream stream, string name)
 		{
+			if(name.EndsWith(".jpg", StringComparison.InvariantCultureIgnoreCase) || name.EndsWith(".jpeg", StringComparison.InvariantCultureIgnoreCase)) {
+				return LoadJpgFromStream(stream);
+			} else {
+				return LoadFromStream(stream);
+			}
+		}
+
+		private object LoadJpgFromStream(Stream stream)
+		{
+			// There is no Microsoft documentation on how to get non-standard metadata and the info on their forums is incorrect.
+			// The only useful information was here and this solution is based on it.
+			// https://stackoverflow.com/questions/27835064/get-image-orientation-and-rotate-as-per-orientation
+
+			BitmapCreateOptions createOptions = BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile;
+			BitmapMetadata importedMetaData = new BitmapMetadata("jpg");
+			BitmapDecoder sourceDecoder = BitmapDecoder.Create(stream, createOptions, BitmapCacheOption.Default);
+			BitmapSource imageSource = sourceDecoder.Frames[0];
+			if(imageSource.Metadata != null) {
+				imageSource.Metadata.Freeze();
+				importedMetaData = imageSource.Metadata.Clone() as BitmapMetadata;
+			}
+
+			UInt16? orientation = importedMetaData.GetQuery("/app1/ifd/exif:{uint=274}") as UInt16?;
+
+			Rotation rotation = Rotation.Rotate0;
+			if(orientation.HasValue && orientation != 1) {
+				switch(orientation) {
+					case 8:
+						rotation = Rotation.Rotate270;
+						break;
+					case 3:
+						rotation = Rotation.Rotate180;
+						break;
+					case 6:
+						rotation = Rotation.Rotate90;
+						break;
+				}
+			}
+
+			stream.Position = 0;
+			return LoadFromStream(stream, rotation);
+		}
+
+		public override object LoadFromStream(Stream stream) {
+			return LoadFromStream(stream, Rotation.Rotate0);
+		}
+
+		private object LoadFromStream(Stream stream, Rotation rotation) {
 			var img = new SWMI.BitmapImage ();
 			img.BeginInit();
 			img.CacheOption = SWMI.BitmapCacheOption.OnLoad;
 			img.StreamSource = stream;
+			img.Rotation = rotation;
 			img.EndInit();
 
 			return LoadFromImageSource (img);
@@ -492,6 +541,8 @@ namespace Xwt.WPFBackend
 				var scaledHeight = idesc.Size.Height * scaleFactor;
 				if (bmpImage != null && (Math.Abs (bmpImage.PixelHeight - scaledHeight) > 0.001 || Math.Abs (bmpImage.PixelWidth - scaledWidth) > 0.001))
 					f = new TransformedBitmap (bmpImage, new ScaleTransform (scaledWidth / bmpImage.PixelWidth, scaledHeight / bmpImage.PixelHeight));
+
+				f.Freeze();
 
 				dc.DrawImage (f, new Rect (x, y, idesc.Size.Width, idesc.Size.Height));
 

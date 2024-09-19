@@ -44,6 +44,16 @@ namespace Xwt.Mac
 		{
 			base.Initialize ();
 			ViewObject = new MacComboBox (EventSink, ApplicationContext);
+
+			#if !MONOMAC
+			this.Widget.WillPopUp += (object sender, EventArgs e) => {
+				this.IsDropDownOpen = true;
+			};
+
+			this.Widget.WillDismiss += (object sender, EventArgs e) => {
+				this.IsDropDownOpen = false;
+			};
+			#endif
 		}
 		
 		protected override Size GetNaturalSize ()
@@ -63,6 +73,8 @@ namespace Xwt.Mac
 		#endregion
 
 		#region IComboBoxBackend implementation
+		public bool IsDropDownOpen { get; private set; }
+
 		public void SetViews (CellViewCollection views)
 		{
 		}
@@ -162,7 +174,8 @@ namespace Xwt.Mac
 		NSTrackingArea trackingArea;
 		public override void UpdateTrackingAreas ()
 		{
-			if (trackingArea != null) {
+			base.UpdateTrackingAreas();
+			if(trackingArea != null) {
 				RemoveTrackingArea (trackingArea);
 				trackingArea.Dispose ();
 			}

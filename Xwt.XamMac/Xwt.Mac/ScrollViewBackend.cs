@@ -37,15 +37,47 @@ namespace Xwt.Mac
 		IWidgetBackend child;
 		ScrollPolicy verticalScrollPolicy;
 		ScrollPolicy horizontalScrollPolicy;
-		NormalClipView clipView;
+		NSClipView contentView;
+		IDisposable documentView;
+
+		const int maxBounce = 500;
+		NSView bounceViewTop;
+		NSView bounceViewBottom;
+		NSView bounceViewLeft;
+		NSView bounceViewRight;
 
 		public override void Initialize ()
 		{
 			ViewObject = new CustomScrollView ();
+			((CustomScrollView)ViewObject).EventSink = EventSink;
 			Widget.HasHorizontalScroller = true;
 			Widget.HasVerticalScroller = true;
 			Widget.AutohidesScrollers = true;
 			Widget.AutoresizesSubviews = true;
+			Widget.DrawsBackground = false;
+			Widget.ScrollerStyle = NSScrollerStyle.Overlay;
+			
+		}
+
+		protected override void Dispose (bool disposing)
+		{
+			if(Widget != null) {
+				if(documentView != null) {
+					documentView.Dispose();
+				}
+				if(contentView != null) {
+					contentView.Dispose();
+				}
+				if(child != null) {
+					child.Dispose();
+				}
+				Widget.Dispose();
+			}
+			base.Dispose(disposing);
+		}
+
+		public void ScrollToPoint(Point point) {
+			(Widget.DocumentView as NSView).ScrollPoint(new CGPoint((float)point.X, (float)point.Y));
 		}
 
 		public override Size GetPreferredSize (SizeConstraint widthConstraint, SizeConstraint heightConstraint)
@@ -74,8 +106,9 @@ namespace Xwt.Mac
 		protected override Size CalcFittingSize()
 		{
 			var s = Frontend.Surface.GetPreferredSize ();
-			s.Width = Math.Max (s.Width, Widget.ContentView.Frame.Size.Width);
-			s.Height = Math.Max (s.Height, Widget.ContentView.Frame.Size.Height);
+			// Do not base size on size of ContentView or legacy (non-overlapping) scrollbars will cause the view to shrink each time the size is calculated (WIN-8891)
+			s.Width = Math.Max (s.Width, this.Widget.Bounds.Size.Width);
+			s.Height = Math.Max (s.Height, this.Widget.Bounds.Size.Height);
 			return s;
 		}
 
@@ -97,21 +130,51 @@ namespace Xwt.Mac
 				CustomClipView clipView = new CustomClipView (hs, vs);
 				clipView.Scrolled += OnScrolled;
 				Widget.ContentView = clipView;
+				contentView = clipView;
 				var dummy = new DummyClipView ();
 				dummy.AddSubview (backend.Widget);
 				backend.Widget.Frame = new CGRect (0, 0, clipView.Frame.Width, clipView.Frame.Height);
 				clipView.DocumentView = dummy;
+				documentView = dummy;
 				backend.EventSink.SetScrollAdjustments (hs, vs);
 				vertScroll = vs;
 				horScroll = hs;
 			}
 			else {
-				clipView = new NormalClipView ();
+				NormalClipView clipView = new NormalClipView ();
 				clipView.Scrolled += OnScrolled;
+
+				// the following Wiget._____View = statemetns cause this object never to be garbage collected since the Widget gets a reference to this
+				// it is because of these that Dispose() must be called on ScrollView objects in order for the memory to be released
+				contentView = clipView;
+				documentView = GetWidgetWithPlacement(child);
 				Widget.ContentView = clipView;
-				Widget.DocumentView = GetWidgetWithPlacement (child);
+				Widget.DocumentView = (NSView)documentView;
 				UpdateChildSize ();
 			}
+			if(backend.BackgroundColor.Brightness < 0.5) {
+				Widget.ScrollerKnobStyle = NSScrollerKnobStyle.Light;
+			} else {
+				Widget.ScrollerKnobStyle = NSScrollerKnobStyle.Dark;
+			}
+			// make the "bounce" area of the scroll view the same color as the content
+			CGColor backgroundColor = new CGColor((float)backend.BackgroundColor.Red, (float)backend.BackgroundColor.Green, (float)backend.BackgroundColor.Blue, (float)backend.BackgroundColor.Alpha);
+			bounceViewTop = new NSView();
+			bounceViewTop.WantsLayer = true;
+			bounceViewTop.Layer.BackgroundColor = backgroundColor;
+			Widget.ContentView.AddSubview(bounceViewTop);
+			bounceViewBottom = new NSView();
+			bounceViewBottom.WantsLayer = true;
+			bounceViewBottom.Layer.BackgroundColor = backgroundColor;
+			Widget.ContentView.AddSubview(bounceViewBottom);
+			bounceViewLeft = new NSView();
+			bounceViewLeft.WantsLayer = true;
+			bounceViewLeft.Layer.BackgroundColor = backgroundColor;
+			Widget.ContentView.AddSubview(bounceViewLeft);
+			bounceViewRight = new NSView();
+			bounceViewRight.WantsLayer = true;
+			bounceViewRight.Layer.BackgroundColor = backgroundColor;
+			Widget.ContentView.AddSubview(bounceViewRight);
 		}
 		
 		public ScrollPolicy VerticalScrollPolicy {
@@ -194,9 +257,17 @@ namespace Xwt.Mac
 
 			size.Width = Math.Max(size.Width, Widget.ContentView.Frame.Width);
 			size.Height = Math.Max(size.Height, Widget.ContentView.Frame.Height);
+			
 			((NSView)(Widget.DocumentView)).SetFrameSize (size.ToCGSize ());
+			
+			if(bounceViewTop != null) {
+				bounceViewTop.Frame = new CGRect(-maxBounce, -maxBounce, (nfloat)size.Width + maxBounce * 2, (nfloat)maxBounce);
+				bounceViewBottom.Frame = new CGRect(-maxBounce, size.Height, (nfloat)size.Width + maxBounce * 2, (nfloat)maxBounce);
+				bounceViewLeft.Frame = new CGRect(-maxBounce, 0, (nfloat)maxBounce, size.Height);
+				bounceViewRight.Frame = new CGRect(size.Width, 0, (nfloat)maxBounce, size.Height);
+			}
 		}
-		
+
 		public void SetChildSize (Size s)
 		{
 			// ScrollView child calculation does not take scrolling policies into account
@@ -214,6 +285,7 @@ namespace Xwt.Mac
 				Widget.BackgroundColor = value.ToNSColor ();
 			}
 		}
+
 	}
 	
 	class CustomScrollView: NSScrollView, IViewObject
@@ -230,6 +302,18 @@ namespace Xwt.Mac
 			get {
 				return true;
 			}
+		}
+
+		public IScrollViewEventSink EventSink { get; set;}
+
+//		public override void ScrollWheel(NSEvent theEvent) {
+//			base.ScrollWheel(theEvent);
+//			EventSink.OnMouseScrolled(new MouseScrolledEventArgs((long)theEvent.Timestamp, (double)theEvent.ScrollingDeltaX, (double)theEvent.ScrollingDeltaY, ScrollDirection.Down));
+//		}
+
+		public override void ReflectScrolledClipView(NSClipView cView) {
+			base.ReflectScrolledClipView(cView);
+			EventSink.OnVisibleRectChanged();
 		}
 	}
 

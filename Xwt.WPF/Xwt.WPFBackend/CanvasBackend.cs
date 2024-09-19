@@ -20,6 +20,7 @@ namespace Xwt.WPFBackend
 		public CanvasBackend ()
 		{
 			Canvas = new CustomCanvas (this);
+            Canvas.ClipToBounds = true;
 			Canvas.RenderAction = Render;
 		}
 
@@ -36,7 +37,7 @@ namespace Xwt.WPFBackend
 
 		protected override void SetWidgetColor (Drawing.Color value)
 		{
-			// Do nothing
+			QueueDraw();
 		}
 
 		private void Render (System.Windows.Media.DrawingContext dc)
@@ -84,11 +85,14 @@ namespace Xwt.WPFBackend
 			if (i == -1) {
 				children.Add (widget);
 				childrenBounds.Add (bounds);
+				i = children.Count - 1;
 			}
 			else {
 				childrenBounds[i] = bounds;
 			}
-			Canvas.SetAllocation (children.ToArray (), childrenBounds.ToArray ());
+			// calling this normally causes the every existing child to be remeasured again
+			// instead tell it which child specifically needs to be placed
+			Canvas.SetAllocation (children.ToArray (), childrenBounds.ToArray (), i);
 		}
 
 		public void RemoveChild (IWidgetBackend widget)

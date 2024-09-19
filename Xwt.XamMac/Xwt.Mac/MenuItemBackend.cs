@@ -40,7 +40,45 @@ namespace Xwt.Mac
 		string label;
 		bool useMnemonic;
 
-		public MenuItemBackend() : this(new NSMenuItem())
+		private NSEventModifierMask GetModifierMask(KeyShortcut accel) {
+			NSEventModifierMask mask = default(NSEventModifierMask);
+
+			if(accel.Modifiers.HasFlag(KeyboardKeyModifiers.Command)) {
+				mask |= NSEventModifierMask.CommandKeyMask;
+			}
+
+			if(accel.Modifiers.HasFlag(KeyboardKeyModifiers.Shift)) {
+				mask |= NSEventModifierMask.ShiftKeyMask;
+			}
+
+			if(accel.Modifiers.HasFlag(KeyboardKeyModifiers.Alt)) {
+				mask |= NSEventModifierMask.AlternateKeyMask;
+			}
+
+			if(accel.Modifiers.HasFlag(KeyboardKeyModifiers.Control)) {
+				mask |= NSEventModifierMask.ControlKeyMask;
+			}
+
+			return mask;
+		}
+
+		private KeyShortcut shortcut;
+		public KeyShortcut Shortcut {
+			get {
+				return shortcut;
+			}
+			set {
+				shortcut = value;
+				if(value.Modifiers.HasFlag(KeyboardKeyModifiers.Shift)) {
+					item.KeyEquivalent = value.Key.MacMenuCharacter.ToString();
+				} else {
+					item.KeyEquivalent = value.Key.MacMenuCharacter.ToString().ToLower();
+				}
+				item.KeyEquivalentModifierMask = GetModifierMask(value);
+			}
+		}
+
+		public MenuItemBackend (): this (new NSMenuItem ())
 		{
 		}
 
@@ -124,6 +162,16 @@ namespace Xwt.Mac
 				item.Hidden = !value;
 			}
 		}
+		
+		public bool IsSubMenuOpen {
+			get {
+				// sorry - can't do this on macOS - listen to the opened/closed events instead (they don't work properly on Windows, but this function does, which is why it exists)
+				throw new NotImplementedException();
+			}
+			set {
+				throw new NotImplementedException();
+			}
+		}
 
 		public bool Sensitive
 		{
@@ -155,6 +203,15 @@ namespace Xwt.Mac
 		public void SetFormattedText (FormattedText text)
 		{
 			item.AttributedTitle = text.ToAttributedString ();
+		}
+
+		public string ToolTip {
+			get {
+				return item.ToolTip;
+			}
+			set {
+				item.ToolTip = value;
+			}
 		}
 
 		#region IBackend implementation

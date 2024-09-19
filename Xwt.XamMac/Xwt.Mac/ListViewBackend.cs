@@ -308,9 +308,9 @@ namespace Xwt.Mac
 		{
 		}
 
+
 		[Export("tableView:validateDrop:proposedRow:proposedDropOperation:")]
-		public NSDragOperation ValidateDrop (NSTableView tableView, INSDraggingInfo info, nint row, NSTableViewDropOperation dropOperation)
-		{
+		public NSDragOperation ValidateDrop(NSTableView tableView, INSDraggingInfo info, nint row, NSTableViewDropOperation dropOperation) {
 			return NSDragOperation.None;
 		}
 

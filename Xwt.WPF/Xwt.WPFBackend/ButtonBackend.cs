@@ -34,13 +34,17 @@ using System.Windows.Media;
 using System.Text.RegularExpressions;
 using SWC = System.Windows.Controls;
 using Xwt.Backends;
+using System.Reflection;
 using System.Windows.Data;
+using SWM = System.Windows.Media;
 
 
 namespace Xwt.WPFBackend
 {
 	public class ButtonBackend : WidgetBackend, IButtonBackend
 	{
+		public ButtonStyle buttonStyle;
+
 		public ButtonBackend ()
 			: this (new WpfButton ())
 		{
@@ -63,6 +67,8 @@ namespace Xwt.WPFBackend
 		}
 
 		public void SetButtonStyle (ButtonStyle style) {
+			buttonStyle = style;
+
 			switch (style)
 			{
 				case ButtonStyle.Normal:
@@ -79,8 +85,31 @@ namespace Xwt.WPFBackend
 					Button.BorderThickness = new Thickness (0);
 					Button.BorderBrush = Brushes.Transparent;
 					break;
+				case ButtonStyle.AlwaysBorderless:
+					Button.Style = (Style)ButtonResources["NoChromeButton"];
+					break;
+				case ButtonStyle.CompactFlatMomentary:
+				case ButtonStyle.CompactFlatToggle:
+					Button.Focusable = false;
+					Button.Style = (Style)ButtonResources["CompactFlat"];
+					break;
 			}
 			Button.InvalidateMeasure ();
+		}
+
+		private bool isToggled = false;
+		public bool IsToggled {
+			get { return isToggled; }
+			set {
+				isToggled = value;
+				if (buttonStyle == ButtonStyle.CompactFlatToggle) {
+					if (isToggled) {
+						Button.Style = (Style)ButtonResources["CompactFlatToggled"];
+					} else {
+						Button.Style = (Style)ButtonResources["CompactFlat"];
+					}
+				}
+			}
 		}
 
 		public virtual void SetButtonType (ButtonType type) {
@@ -102,10 +131,11 @@ namespace Xwt.WPFBackend
 			var accessText = new SWC.AccessText ();
 			accessText.Text = label;
 			if (image.IsNull)
-				if (useMnemonic)
-					Button.Content = accessText;
-				else
-					Button.Content = accessText.Text.Replace ("_", "__");
+				//if (useMnemonic)
+				//	Button.Content = accessText;
+				//else
+				//	Button.Content = accessText.Text.Replace ("_", "__");
+				Button.Content = label;
 			else {
 				SWC.DockPanel grid = new SWC.DockPanel ();
 
@@ -200,6 +230,48 @@ namespace Xwt.WPFBackend
 					buttonsDictionary = CreateButtonResources ();
 
 				return buttonsDictionary;
+			}
+		}
+
+		public override Size GetPreferredSize(SizeConstraint widthConstraint, SizeConstraint heightConstraint) {
+			Size preSize = base.GetPreferredSize(widthConstraint, heightConstraint);
+
+			if(Button.Content is string) {
+				string label = (string)Button.Content;
+				System.Windows.Media.FormattedText formattedText = new System.Windows.Media.FormattedText(label, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+									new Typeface(Button.FontFamily, Button.FontStyle, Button.FontWeight, Button.FontStretch), Button.FontSize, null);
+				double formattedTextWidth = formattedText.WidthIncludingTrailingWhitespace;
+				preSize.Width = formattedTextWidth + 10;
+			}
+
+			return preSize;
+		}
+
+		public Xwt.Drawing.Color TextColor {
+			get {
+				SWM.Color color = SystemColors.ControlTextColor;
+
+				if(Button.Foreground != null)
+					color = ((SWM.SolidColorBrush)Button.Foreground).Color;
+
+				return DataConverter.ToXwtColor(color);
+			}
+			set {
+				Button.Foreground = ResPool.GetSolidBrush(value);
+			}
+		}
+
+		public Xwt.Drawing.Color BackgroundColor {
+			get {
+				SWM.Color color = SystemColors.ControlColor;
+
+				if(Button.Foreground != null)
+					color = ((SWM.SolidColorBrush)Button.Background).Color;
+
+				return DataConverter.ToXwtColor(color);
+			}
+			set {
+				Button.Background = ResPool.GetSolidBrush(value);
 			}
 		}
 

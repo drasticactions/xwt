@@ -30,6 +30,7 @@ using CoreGraphics;
 using Foundation;
 using ObjCRuntime;
 using Xwt.Backends;
+using NativeHandle = System.IntPtr;
 
 namespace Xwt.Mac
 {
@@ -167,7 +168,7 @@ namespace Xwt.Mac
 			set {
 				if (value == WrapMode.None) {
 					Widget.Cell.Wraps = false;
-					Widget.Cell.UsesSingleLineMode = true;
+					Widget.Cell.UsesSingleLineMode = false; //Bug in monomac causes single line mode to display with incorrect vertical alignment
 				} else {
 					Widget.Cell.Wraps = true;
 					Widget.Cell.UsesSingleLineMode = false;
@@ -185,7 +186,7 @@ namespace Xwt.Mac
 		}
 	}
 
-	sealed class CustomAlignedContainer: WidgetView
+	public class CustomAlignedContainer: WidgetView
 	{
 		public NSView Child;
 
@@ -242,6 +243,14 @@ namespace Xwt.Mac
 	
 	class TextFieldView: NSTextField, IViewObject
 	{
+		public override CGRect Frame { 
+			get { return base.Frame; }
+			set {
+				base.Frame = value;
+				this.StringValue = this.StringValue;
+			}
+		}
+
 		CustomTextFieldCell cell;
 
 		public ViewBackend Backend { get; set; }

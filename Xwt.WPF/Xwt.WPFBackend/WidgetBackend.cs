@@ -342,8 +342,14 @@ namespace Xwt.WPFBackend
 		{
 			var p = Widget.PointToScreenDpiAware (new System.Windows.Point (
 				widgetCoordinates.X, widgetCoordinates.Y));
-
-			return new Point (p.X, p.Y);
+			Rectangle ret = new Rectangle(widgetCoordinates, new Size(1, 1));
+			double scaleFactor = Xwt.Desktop.PrimaryScreen.ScaleFactor;
+			foreach(Screen sc in Xwt.Desktop.Screens) {
+				if(sc.Bounds.Contains(ret)) {
+					scaleFactor = sc.ScaleFactor;
+				}
+			}
+			return new Point (p.X / scaleFactor, p.Y / scaleFactor);
 		}
 
 		SW.Size lastNaturalSize;
@@ -543,7 +549,8 @@ namespace Xwt.WPFBackend
 				var ev = (WidgetEvent)eventId;
 				switch (ev) {
 					case WidgetEvent.KeyPressed:
-						Widget.PreviewKeyDown += WidgetKeyDownHandler;
+						Widget.PreviewKeyDown += WidgetPreviewKeyDownHandler;
+						Widget.KeyDown += WidgetKeyDownHandler;
 						break;
 					case WidgetEvent.KeyReleased:
 						Widget.PreviewKeyUp += WidgetKeyUpHandler;
@@ -597,7 +604,8 @@ namespace Xwt.WPFBackend
 				var ev = (WidgetEvent)eventId;
 				switch (ev) {
 					case WidgetEvent.KeyPressed:
-						Widget.PreviewKeyDown -= WidgetKeyDownHandler;
+						Widget.KeyDown -= WidgetKeyDownHandler;
+						Widget.PreviewKeyDown -= WidgetPreviewKeyDownHandler;
 						break;
 					case WidgetEvent.KeyReleased:
 						Widget.PreviewKeyUp -= WidgetKeyUpHandler;
@@ -665,6 +673,14 @@ namespace Xwt.WPFBackend
 			}
 		}
 
+		void WidgetPreviewKeyDownHandler (object sender, System.Windows.Input.KeyEventArgs e)
+		{
+			// Forward events to KeyDownHandler for special keys that are normally handled before they get to KeyDownHandler
+			if(e.Key == SW.Input.Key.Up || e.Key == SW.Input.Key.Down || e.Key == SW.Input.Key.PageUp || e.Key == SW.Input.Key.PageDown) {
+				WidgetKeyDownHandler(sender, e);
+			}
+		}
+
 		void WidgetKeyDownHandler (object sender, System.Windows.Input.KeyEventArgs e)
 		{
 			KeyEventArgs args;
@@ -727,6 +743,18 @@ namespace Xwt.WPFBackend
 				e.Handled = true;
 		}
 
+		ButtonEventArgs ToXwtButtonArgs (MouseButtonEventArgs e)
+		{
+			var pos = e.GetPosition (Widget);
+			return new ButtonEventArgs () {
+				X = pos.X,
+				Y = pos.Y,
+				MultiplePress = e.ClickCount,
+				Button = e.ChangedButton.ToXwtButton (),
+				IsFromSource = e.Source == NativeWidget,
+			};
+		}
+
 		void WidgetGotFocusHandler (object o, RoutedEventArgs e)
 		{
 			Context.InvokeUserCode (this.eventSink.OnGotFocus);
@@ -776,7 +804,7 @@ namespace Xwt.WPFBackend
 				Adorner = new ImageAdorner (e, data.ImageBackend);
 
 				AdornedLayer = AdornerLayer.GetAdornerLayer (e);
-				AdornedLayer.Add (Adorner);
+				AdornedLayer?.Add (Adorner);
 
 				AdornedWindow.DragOver += AdornedWindowOnDragOver;
 			}
@@ -787,7 +815,7 @@ namespace Xwt.WPFBackend
 				OnDragFinished (this, new DragFinishedEventArgs (effect == DragDropEffects.Move));
 
 				if (Adorner != null) {
-					AdornedLayer.Remove (Adorner);
+					AdornedLayer?.Remove (Adorner);
 					AdornedLayer = null;
 					Adorner = null;
 
@@ -807,6 +835,10 @@ namespace Xwt.WPFBackend
 		{
 			DragDropInfo.TargetTypes = types == null ? new TransferDataType [0] : types;
 			Widget.AllowDrop = true;
+		}
+
+		public void UnregisterDragTarget() {
+			Widget.AllowDrop = false;
 		}
 
 		public void SetDragSource (TransferDataType [] types, DragDropAction dragAction)
@@ -858,16 +890,29 @@ namespace Xwt.WPFBackend
 			DragDropInfo.DragRect = Rect.Empty;
 		}
 
-		static DragDropAction DetectDragAction (DragDropKeyStates keys)
+		static DragDropAction DetectDragAction(System.Windows.DragEventArgs e)
 		{
-			if ((keys & DragDropKeyStates.ControlKey) == DragDropKeyStates.ControlKey) {
-				if ((keys & DragDropKeyStates.ShiftKey) == DragDropKeyStates.ShiftKey)
-					return DragDropAction.Link;
-				else
-					return DragDropAction.Copy;
+			// Translate the DragDropEffects (Windows) to DragDropAction (XWT).
+			// Do not check for keyboard modifiers as this should be handled by the application
+			// instead of the XWT framework in order to provide more flexibility when implementing.
+			DragDropAction action = DragDropAction.None;
+			if((e.AllowedEffects ^ DragDropEffects.All) == 0) {
+				action = DragDropAction.All;
+			} else {
+				if((e.AllowedEffects & DragDropEffects.Copy) != 0) {
+					action |= DragDropAction.Copy;
+				}
+
+				if((e.AllowedEffects & DragDropEffects.Move) != 0) {
+					action |= DragDropAction.Move;
+				}
+
+				if((e.AllowedEffects & DragDropEffects.Link) != 0) {
+					action |= DragDropAction.Link;
+				}
 			}
 
-			return DragDropAction.Move;
+			return action;
 		}
 
 		static void FillDataStore (TransferDataStore store, IDataObject data, TransferDataType [] types)
@@ -888,8 +933,12 @@ namespace Xwt.WPFBackend
 				else if (type == TransferDataType.Uri) {
 					var uris = ((string [])value).Select (f => new Uri (f)).ToArray ();
 					store.AddUris (uris);
-				} else if (value is byte[])
-					store.AddValue (type, (byte[]) value);
+				} else if (value is byte[]) {
+					// Deserialize any data type, including possibly a byte[] that is wrapped in
+					// a header/footer (in another longer byte[]), to get the original value back out.
+					// Now it's a byte array again, or whatever type of object...
+					store.AddValue (type, TransferDataSource.DeserializeValue (value as byte[], typeof(byte[])));
+				}
 				else
 					store.AddValue (type, value);
 			}
@@ -935,11 +984,14 @@ namespace Xwt.WPFBackend
 		void WidgetDragOverHandler (object sender, System.Windows.DragEventArgs e)
 		{
 			if (Adorner != null) {
-				var w = GetParentOrMainWindow ();
+                var w = GetParentOrMainWindow ();
+				if (w == null) {
+					return;
+				}
 				var v = (UIElement)w.Content;
 
 				if (w != AdornedWindow) {
-					AdornedLayer.Remove (Adorner);
+					AdornedLayer?.Remove (Adorner);
 
 					AdornedWindow.AllowDrop = false;
 					AdornedWindow.DragOver -= AdornedWindowOnDragOver;
@@ -948,8 +1000,8 @@ namespace Xwt.WPFBackend
 					AdornedWindow.AllowDrop = true;
 					AdornedWindow.DragOver += AdornedWindowOnDragOver;
 
-					AdornedLayer = AdornerLayer.GetAdornerLayer (v);
-					AdornedLayer.Add (Adorner);
+					AdornedLayer = v != null ? AdornerLayer.GetAdornerLayer (v) : null;
+					AdornedLayer?.Add (Adorner);
 				}
 
 				Adorner.Offset = e.GetPosition (v);
@@ -961,7 +1013,17 @@ namespace Xwt.WPFBackend
 		{
 			var types = e.Data.GetFormats ().Select (DataConverter.ToXwtTransferType).ToArray ();
 			var pos = e.GetPosition (Widget).ToXwtPoint ();
-			var proposedAction = DetectDragAction (e.KeyStates);
+
+			if(Frontend.ShouldPreventDragByLocation != null) {
+				if(Frontend.ShouldPreventDragByLocation(pos)) {
+					Mouse.SetCursor(Cursors.No);
+					e.Effects = currentDragEffect = DragDropEffects.None;
+					e.Handled = true;
+					return;
+				}
+			}
+
+			var proposedAction = DetectDragAction (e);
 
 			e.Handled = true; // Prevent default handlers from being used.
 
@@ -997,6 +1059,16 @@ namespace Xwt.WPFBackend
 			}
 
 			e.Effects = currentDragEffect = proposedAction.ToWpfDropEffect ();
+
+			// allow drag and drop of URLs as text, use Copy effect so it works and looks good,
+			// if possible, else Link effect if Copy not allow by source
+			if (e.Data.GetDataPresent(DataFormats.Text) || e.Data.GetDataPresent(DataFormats.UnicodeText)) {
+				if ((e.AllowedEffects & DragDropEffects.Copy) > 0) {
+					e.Effects = currentDragEffect = DragDropEffects.Copy;
+				} else if ((e.AllowedEffects & DragDropEffects.Link) > 0) {
+					e.Effects = currentDragEffect = DragDropEffects.Link;
+				}
+			}
 		}
 
 		void WidgetDropHandler (object sender, System.Windows.DragEventArgs e)
@@ -1097,6 +1169,8 @@ namespace Xwt.WPFBackend
 			if (Widget.IsVisible)
 				Context.InvokeUserCode (this.eventSink.OnBoundsChanged);
 		}
+
+		public virtual Color TextColor { get; set; }
 
 		Task IDispatcherBackend.InvokeAsync(Action action)
 		{

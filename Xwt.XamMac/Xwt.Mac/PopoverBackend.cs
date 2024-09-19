@@ -33,12 +33,42 @@ using Foundation;
 using ObjCRuntime;
 using Xwt.Backends;
 using Xwt.Drawing;
-
+using NativeHandle = System.IntPtr;
 
 namespace Xwt.Mac
 {
 	public class PopoverBackend : IPopoverBackend
 	{
+		private class PopoverDelegate : NSPopoverDelegate {
+			private IPopoverEventSink eventSink;
+
+			public PopoverDelegate(IPopoverEventSink sink) {
+				this.eventSink = sink;
+			}
+
+			public override void DidClose(NSNotification notification) {
+				eventSink.OnClosed();
+			}
+		}
+
+		public bool IsVisible { 
+			get { return popover.Shown; }
+		}
+
+		public bool StaysOpen {
+			get {
+				return this.popover.Behavior == NSPopoverBehavior.ApplicationDefined;
+			}
+			set {
+				if(value) {
+					this.popover.Behavior = NSPopoverBehavior.ApplicationDefined;
+				} else {
+					this.popover.Behavior = NSPopoverBehavior.Transient;
+				}
+
+			}
+		}
+
 		public Popover Frontend { get; private set; }
 		public ApplicationContext ApplicationContext { get; set; }
 		public IPopoverEventSink EventSink { get; set; }
@@ -243,6 +273,8 @@ namespace Xwt.Mac
 				positionRect.Width = referenceWidget.Size.Width;
 			if (Math.Abs (positionRect.Height) < double.Epsilon)
 				positionRect.Height = referenceWidget.Size.Height;
+
+			positionRect = new Rectangle(positionRect.X, positionRect.Y, positionRect.Width * 2, positionRect.Height); //It appears to be necessary to multiply the width by a factor of 2
 
 			DestroyPopover ();
 

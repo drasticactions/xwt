@@ -29,6 +29,7 @@
 // THE SOFTWARE.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using AppKit;
 using CoreGraphics;
@@ -36,6 +37,7 @@ using Foundation;
 using ObjCRuntime;
 using Xwt.Backends;
 using Xwt.Drawing;
+using NativeHandle = System.IntPtr;
 
 namespace Xwt.Mac
 {
@@ -51,10 +53,24 @@ namespace Xwt.Mac
 
 		public WindowBackend (NativeHandle ptr): base (ptr)
 		{
+			this.WillEnterFullScreen += HandleWindowStateChanging;
+			this.WillMiniaturize += HandleWindowStateChanging;
+			this.WillStartLiveResize += HandleWindowStateChanging;
+		}
+
+		private void HandleWindowStateChanging(object sender, EventArgs e) {
+			if(this.WindowState == WindowState.Normal) {
+				Rectangle restoreBounds = new Rectangle(this.Frame.X, this.Frame.Y, this.Frame.Width, this.Frame.Height);
+				restoreBounds.Y = Desktop.Bounds.Height - (restoreBounds.Y + restoreBounds.Height); //Invert Y
+				cachedRestoreBounds = restoreBounds;
+			}
 		}
 		
 		public WindowBackend ()
 		{
+			this.WillEnterFullScreen += HandleWindowStateChanging;
+			this.WillMiniaturize += HandleWindowStateChanging;
+			this.WillStartLiveResize += HandleWindowStateChanging;
 			this.controller = new WindowBackendController ();
 			controller.Window = this;
 			StyleMask |= NSWindowStyle.Resizable | NSWindowStyle.Closable | NSWindowStyle.Miniaturizable;
@@ -64,11 +80,18 @@ namespace Xwt.Mac
 			ContentView.Hidden = true;
 
 			// TODO: do it only if mouse move events are enabled in a widget
-			AcceptsMouseMovedEvents = true;
+			// Sept 10, 2023: Removed call to set AcceptsMouseMovedEvents = true
+			// Seems to not have an adverse effect. Restore this if things
+			// stop working
+			//AcceptsMouseMovedEvents = true;
 
-			Center ();
+			Center();
 
-			WeakDelegate = this;
+			// Use event handlers instead of taking over WeakDelegate
+			DidResize += HandleDidResize;
+			DidMove += HandleDidMove;
+			WindowShouldClose += HandleWindowShouldClose;
+			WillClose += HandleWillClose;
 		}
 
 		object IWindowFrameBackend.Window {
@@ -179,6 +202,13 @@ namespace Xwt.Mac
 			}
 		}
 
+		public override bool CanBecomeKeyWindow {
+			get {
+				// must be overriden or borderless windows will not be able to become key
+				return frontend.CanBecomeKey;
+			}
+		}
+		
 		public bool HasFocus {
 			get {
 				return IsKeyWindow;
@@ -208,6 +238,74 @@ namespace Xwt.Mac
 			}
 		}
 
+		private Rectangle cachedRestoreBounds;
+
+		public WindowState WindowState {
+			get {
+				if(this.IsMiniaturized) {
+					return WindowState.Minimized;
+				} else if(this.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+					return WindowState.FullScreen;
+				} else if(this.IsZoomed) {
+					return WindowState.Maximized;
+				} else {
+					return WindowState.Normal;
+				}
+			}
+
+			set {
+
+				if(value == WindowState) { return; }
+
+				switch(value) {
+				case WindowState.Minimized:
+					if(this.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+						this.ToggleFullScreen(this);
+					}
+					this.Miniaturize(this);
+					break;
+				case WindowState.FullScreen:
+					if(this.IsMiniaturized) {
+						this.Deminiaturize(this);
+					}
+					if(!this.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+						this.ToggleFullScreen(this);
+					}
+					break;
+				case WindowState.Maximized:
+					if(this.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+						this.ToggleFullScreen(this);
+					}
+					if(this.IsMiniaturized) {
+						this.Deminiaturize(this);
+					}
+					if(!this.IsZoomed) {
+						this.Zoom(this);
+					}
+					break;
+				case WindowState.Normal:
+					if(this.StyleMask.HasFlag(NSWindowStyle.FullScreenWindow)) {
+						this.ToggleFullScreen(this);
+					}
+					if(IsZoomed) {
+						this.Zoom(this);
+					}
+					if(this.IsMiniaturized) {
+						this.Deminiaturize(this);
+					}
+					break;
+				default:
+					throw new InvalidOperationException("Invalid window state: " + value);
+				}
+			}
+		}
+			
+		public Rectangle RestoreBounds {
+			get {
+				return cachedRestoreBounds;
+			}
+		}
+
 		#region IWindowBackend implementation
 		void IBackend.EnableEvent (object eventId)
 		{
@@ -226,26 +324,22 @@ namespace Xwt.Mac
 			}
 		}
 
-		[Export ("windowDidResize:")]
-		new void DidResize (NSNotification notification)
+		new void HandleDidResize (object sender, EventArgs eventArgs)
 		{
 			OnBoundsChanged();
 		}
 
-		[Export ("windowDidMove:")]
-		new void DidMove (NSNotification notification)
+		new void HandleDidMove(object sender, EventArgs eventArgs)
 		{
 			OnBoundsChanged ();
 		}
 
-		[Export("windowShouldClose:")]
-		new bool WindowShouldClose (NSObject sender)
+		new bool HandleWindowShouldClose(NSObject sender)
 		{
 			return closePerformed = RequestClose ();
 		}
 
-		[Export ("windowWillClose:")]
-		new void WillClose (NSNotification notification)
+		new void HandleWillClose(object sender, EventArgs eventArgs)
 		{
 			OnHidden ();
 			OnClosed ();
@@ -340,6 +434,18 @@ namespace Xwt.Mac
 				});
 			}
 		}
+		
+		public override void BecomeMainWindow ()
+		{
+			base.BecomeMainWindow ();
+			eventSink.OnBecomeMain ();
+		}
+		
+		public override void BecomeKeyWindow ()
+		{
+			base.BecomeKeyWindow ();
+			eventSink.OnBecomeKey ();
+		}
 
 		void IWindowBackend.SetChild (IWidgetBackend child)
 		{
@@ -421,7 +527,8 @@ namespace Xwt.Mac
 		void IWindowFrameBackend.Move (double x, double y)
 		{
 			var r = FrameRectFor (new CGRect ((nfloat)x, (nfloat)y, Frame.Width, Frame.Height));
-			SetFrame (r, true);
+			var dr = MacDesktopBackend.ToDesktopRect(r);
+			SetFrame (new CGRect((nfloat)dr.X, (nfloat)dr.Y, (nfloat)dr.Width, (nfloat)dr.Height), true);
 		}
 		
 		void IWindowFrameBackend.SetSize (double width, double height)
@@ -450,8 +557,8 @@ namespace Xwt.Mac
 				return new Rectangle ((int)r.X, (int)r.Y, (int)r.Width, (int)r.Height);
 			}
 			set {
-				var r = MacDesktopBackend.FromDesktopRect (value);
-				var fr = FrameRectFor (r);
+				CGRect cgr = MacDesktopBackend.FromDesktopRect(value);
+				CGRect fr = FrameRectFor (cgr);
 				SetFrame (fr, true);
 			}
 		}
@@ -471,6 +578,8 @@ namespace Xwt.Mac
 
 		static readonly bool XamMacDangerousDispose = Version.Parse(Constants.Version) < new Version(5, 6);
 
+		public static bool SetReleasedWhenClosed = true;
+
 		bool disposing, disposed;
 
 		protected override void Dispose(bool disposing)
@@ -480,23 +589,28 @@ namespace Xwt.Mac
 				this.disposing = true;
 				try
 				{
-					if (VisibilityEventsEnabled() && ContentView != null)
+					if(VisibilityEventsEnabled() && ContentView != null)
 						ContentView.RemoveObserver(this, HiddenProperty);
 
-					if (XamMacDangerousDispose) {
-						// HACK: Xamarin.Mac/MonoMac limitation: no direct way to release a window manually
-						// A NSWindow instance will be removed from NSApplication.SharedApplication.DangerousWindows
-						// only if it is being closed with ReleasedWhenClosed set to true but not on Dispose
-						// and there is no managed way to tell Cocoa to release the window manually (and to
-						// remove it from the active window list).
-						// see also: https://bugzilla.xamarin.com/show_bug.cgi?id=45298
-						// WORKAROUND:
-						// bump native reference count by calling DangerousRetain()
-						// base.Dispose will now unref the window correctly without crashing
-						DangerousRetain();
+					// Disable the following hack - not really sure what it is supposed to accomplish but when it is here,
+					// some dialog windows cause a crash when they are disposed. Exclusion list avoids this problem. WIN-5549
+					if(SetReleasedWhenClosed) {
+						if(XamMacDangerousDispose) {
+							// HACK: Xamarin.Mac/MonoMac limitation: no direct way to release a window manually
+							// A NSWindow instance will be removed from NSApplication.SharedApplication.Windows
+							// only if it is being closed with ReleasedWhenClosed set to true but not on Dispose
+							// and there is no managed way to tell Cocoa to release the window manually (and to
+							// remove it from the active window list).
+							// see also: https://bugzilla.xamarin.com/show_bug.cgi?id=45298
+							// WORKAROUND:
+							// bump native reference count by calling DangerousRetain()
+							// base.Dispose will now unref the window correctly without crashing
+							DangerousRetain();
+						}
+						// tell Cocoa to release the window on Close
+						ReleasedWhenClosed = true;
 					}
-					// tell Cocoa to release the window on Close
-					ReleasedWhenClosed = true;
+
 					// Close the window (Cocoa will do its job even if the window is already closed)
 					Messaging.void_objc_msgSend (this.Handle, closeSel.Handle);
 				} finally {
@@ -562,17 +676,6 @@ namespace Xwt.Mac
 				frame.Height -= (nfloat) (frontend.Padding.VerticalSpacing);
 				childView.Frame = frame;
 			}
-		}
-
-		public override bool ConformsToProtocol (NativeHandle protocol)
-		{
-			// HACK: for some reason on systems with a TouchBar this might be called
-			//       after the window has been closed and released, resulting in
-			//       an ObjectDisposedException followed by a crash
-			if (disposed)
-				return false;
-
-			return base.ConformsToProtocol (protocol);
 		}
 	}
 	

@@ -28,6 +28,7 @@
 
 global using ObjCRuntime;
 
+
 using System;
 using System.Linq;
 using AppKit;
@@ -201,6 +202,7 @@ namespace Xwt.Mac
 
 		public override void UpdateTrackingAreas ()
 		{
+			base.UpdateTrackingAreas();
 			this.UpdateEventTrackingArea (ref trackingArea);
 		}
 

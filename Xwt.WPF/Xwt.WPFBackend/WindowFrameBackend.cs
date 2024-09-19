@@ -107,6 +107,10 @@ namespace Xwt.WPFBackend
 		public virtual bool HasMenu {
 			get { return false;  }
 		}
+		public bool FullScreen {
+			get { return false; } // always false on windows
+			set { }
+		}
 
 		protected WindowFrame Frontend {
 			get { return frontend; }
@@ -194,8 +198,10 @@ namespace Xwt.WPFBackend
 		{
 			get { return window.Visibility == Visibility.Visible; }
 			set {
-				if (value)
+				if (value) {
+					window.ShowActivated = ((Window)Frontend).CanBecomeKey;
 					window.Show ();
+				}
 				else
 					window.Hide ();
 			}
@@ -222,28 +228,51 @@ namespace Xwt.WPFBackend
 		{
 			window.Activate ();
 		}
-		
-		bool IWindowFrameBackend.FullScreen {
+
+		WindowState IWindowFrameBackend.WindowState {
 			get {
-				return window.WindowState == WindowState.Maximized 
-					&& window.ResizeMode == ResizeMode.NoResize;
+				switch (window.WindowState) {
+					case System.Windows.WindowState.Maximized:
+						return Xwt.WindowState.Maximized;
+					case System.Windows.WindowState.Minimized:
+						return Xwt.WindowState.Minimized;
+					case System.Windows.WindowState.Normal:
+						return Xwt.WindowState.Normal;
+					default:
+						throw new Exception("Unexpected window state: " + window.WindowState);
+				}
 			}
 			set {
-				if (value) {
-					window.WindowState = WindowState.Maximized;
-					window.ResizeMode = ResizeMode.NoResize;
+				switch (value) {
+					case Xwt.WindowState.Maximized:
+						window.WindowState = System.Windows.WindowState.Maximized;
+						break;
+					case Xwt.WindowState.Minimized:
+						window.WindowState = System.Windows.WindowState.Minimized;
+						break;
+					case Xwt.WindowState.Normal:
+						window.WindowState = System.Windows.WindowState.Normal;
+						break;
+					default:
+						throw new InvalidOperationException("Invalid window state: " + value);
 				}
-				else {
-					window.WindowState = WindowState.Normal;
-					window.ResizeMode = ResizeMode.CanResize;
-				}
+			}
+		}
+
+		protected Rectangle cachedRestoreBounds;
+
+		Rectangle IWindowFrameBackend.RestoreBounds {
+			get {
+				return window.RestoreBounds.IsEmpty ? cachedRestoreBounds : new Rectangle(window.RestoreBounds.X, window.RestoreBounds.Y, window.RestoreBounds.Width, window.RestoreBounds.Height);
 			}
 		}
 
 		object IWindowFrameBackend.Screen {
 			get {
 				var sb = Bounds;
-				return System.Windows.Forms.Screen.FromRectangle (new System.Drawing.Rectangle ((int)sb.X, (int)sb.Y, (int)sb.Width, (int)sb.Height));
+				double scale = window.GetScaleFactor();
+				System.Drawing.Rectangle rectangle = new System.Drawing.Rectangle((int)(sb.X * scale), (int)(sb.Y * scale), (int)(sb.Width * scale), (int)(sb.Height * scale));
+				return System.Windows.Forms.Screen.FromRectangle (rectangle);
 			}
 		}
 

@@ -47,6 +47,8 @@ namespace Xwt.Mac
 			view.Cell.Wraps = false;
 
 			ViewObject = new CustomAlignedContainer (EventSink, ApplicationContext, (NSView)view) { DrawsBackground = false };
+			((NSTextFieldCell)Widget.Cell).BezelStyle = NSTextFieldBezelStyle.Square;
+			((NSTextFieldCell)Widget.Cell).Bezeled = true;
 		}
 
 		protected override void OnSizeToFit ()
@@ -89,6 +91,13 @@ namespace Xwt.Mac
 			}
 			set {
 				((NSTextFieldCell)Widget.Cell).PlaceholderString = value ?? string.Empty;
+			}
+		}
+
+		public override void SetFocus ()
+		{
+			if(Widget.Window != null) {
+				Widget.Window.MakeFirstResponder(Widget);
 			}
 		}
 

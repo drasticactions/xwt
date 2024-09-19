@@ -43,6 +43,11 @@ namespace Xwt.WPFBackend
 		List<MenuItemBackend> items;
 		FontData customFont;
 		UIElement dummyAccessibiltyUIElement;
+		IMenuEventSink eventSink;
+
+		public void Initialize(IMenuEventSink eventSink) {
+			this.eventSink = eventSink;
+		}
 
 		public override void InitializeBackend (object frontend, ApplicationContext context)
 		{
@@ -123,9 +128,13 @@ namespace Xwt.WPFBackend
 			ParentItem = null;
 		}
 
-		public void Popup ()
+		public void Popup (IWidgetBackend widget)
 		{
 			var menu = CreateContextMenu ();
+			var target = widget.NativeWidget as UIElement;
+			if(target == null)
+				throw new System.ArgumentException("Widget belongs to an unsupported Toolkit", nameof(widget));
+			menu.PlacementTarget = target;
 			menu.Placement = PlacementMode.MousePoint;
 			menu.IsOpen = true;
 		}
@@ -138,18 +147,8 @@ namespace Xwt.WPFBackend
 				throw new System.ArgumentException ("Widget belongs to an unsupported Toolkit", nameof (widget));
 			menu.PlacementTarget = target;
 			menu.Placement = PlacementMode.Relative;
-
-			double hratio = 1;
-			double vratio = 1;
-			PresentationSource source = PresentationSource.FromVisual ((Visual)widget.NativeWidget);
-			if (source != null) {
-				Matrix m = source.CompositionTarget.TransformToDevice;
-				hratio = m.M11;
-				vratio = m.M22;
-			}
-
-			menu.HorizontalOffset = x * hratio;
-			menu.VerticalOffset = y * vratio;
+			menu.HorizontalOffset = x;
+			menu.VerticalOffset = y;
 			menu.IsOpen = true;
 		}
 
@@ -165,9 +164,73 @@ namespace Xwt.WPFBackend
 				var accessibleBackend = (AccessibleBackend)Toolkit.GetBackend (Frontend.Accessible);
 				if (accessibleBackend != null)
 					accessibleBackend.InitAutomationProperties (menu);
+
+				menu.Opened += (object sender, RoutedEventArgs e) => {
+					this.Context.InvokeUserCode(eventSink.OnOpening);
+				};
+
+				menu.Closed += (object sender, RoutedEventArgs e) => {
+					this.Context.InvokeUserCode(eventSink.OnClosed);
+				};
 			}
 
 			return menu;
+		}
+
+		public ContextMenu ContextMenu {
+			get {
+				return menu;
+			}
+		}
+
+		public override void EnableEvent(object eventId) {
+			if(eventId is MenuEvent) {
+				switch((MenuEvent)eventId) {
+				case MenuEvent.Opening:
+					if(this.ParentItem != null) {
+						this.ParentItem.MenuItem.SubmenuOpened += SubmenuOpenedHandler;
+					}
+					break;
+
+				case MenuEvent.Closed:
+					if(this.ParentItem != null) {
+						this.ParentItem.MenuItem.SubmenuClosed += SubmenuClosedHandler;
+					}
+					break;
+				}
+			}
+		}
+
+		public override void DisableEvent(object eventId) {
+			if(eventId is MenuEvent) {
+				switch((MenuEvent)eventId) {
+				case MenuEvent.Opening:
+					if(this.ParentItem != null) {
+						this.ParentItem.MenuItem.SubmenuOpened -= SubmenuOpenedHandler;
+					}
+					break;
+
+				case MenuEvent.Closed:
+					if(this.ParentItem != null) {
+						this.ParentItem.MenuItem.SubmenuClosed -= SubmenuClosedHandler;
+					}
+					break;
+				}
+			}
+		}
+
+		private void SubmenuOpenedHandler(object sender, RoutedEventArgs e)
+		{
+			if((e.Source as System.Windows.Controls.MenuItem) == this.ParentItem.MenuItem)
+			{
+				Context.InvokeUserCode(eventSink.OnOpening);    
+			}
+		}
+
+		private void SubmenuClosedHandler(object sender, RoutedEventArgs e) {
+			if((e.Source as System.Windows.Controls.MenuItem) == this.ParentItem.MenuItem) {
+				Context.InvokeUserCode(eventSink.OnClosed);
+			}
 		}
 	}
 }
