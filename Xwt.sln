@@ -1,139 +1,59 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-VisualStudioVersion = 17.5.002.0
-MinimumVisualStudioVersion = 
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt", "Xwt\Xwt.csproj", "{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt", "Xwt\Xwt.csproj", "{DB137A6D-A5CC-4BB1-8B74-E55E396AD222}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt.XamMac", "Xwt.XamMac\Xwt.XamMac.csproj", "{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt.WPF", "Xwt.WPF\Xwt.WPF.csproj", "{370DDA78-990D-4761-98E8-D8124059C963}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt.WPF", "Xwt.WPF\Xwt.WPF.csproj", "{C93D746E-1586-4D4F-B411-BF5A966E6A08}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestApps", "TestApps", "{56F1CDDC-3E7A-46B0-BDFB-75A0D88C1FE9}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{889B98A1-B4AC-48E1-AA64-5982169FDC2E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples", "TestApps\Samples\Samples.csproj", "{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XamMacTest", "TestApps\XamMacTest\XamMacTest.csproj", "{606C689E-969D-4DFE-AD01-0EC731D60248}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WpfTest", "TestApps\WpfTest\WpfTest.csproj", "{BC0E2D1D-0D42-4744-BB6C-F93431399E5D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XamMacTest", "TestApps\XamMacTest\XamMacTest.csproj", "{1454720E-F3CD-4450-9832-D9111E3EB668}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xwt.XamMac", "Xwt.XamMac\Xwt.XamMac.csproj", "{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		Debug|x86 = Debug|x86
-		Linux-Debug|Any CPU = Linux-Debug|Any CPU
-		Linux-Debug|x86 = Linux-Debug|x86
-		Mac-Debug|Any CPU = Mac-Debug|Any CPU
-		Mac-Debug|x86 = Mac-Debug|x86
 		Release|Any CPU = Release|Any CPU
-		Release|x86 = Release|x86
-		Win-Debug|Any CPU = Win-Debug|Any CPU
-		Win-Debug|x86 = Win-Debug|x86
-		XamMac-Debug|Any CPU = XamMac-Debug|Any CPU
-		XamMac-Net6-Debug|Any CPU = XamMac-Net6-Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Mac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Mac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Win-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.Win-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.XamMac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.XamMac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.XamMac-Net6-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{92494904-35FA-4DC9-BDE9-3A3E87AC49D3}.XamMac-Net6-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Debug|x86.Build.0 = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Mac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Mac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Mac-Debug|x86.ActiveCfg = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Mac-Debug|x86.Build.0 = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|x86.ActiveCfg = Release|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|x86.Build.0 = Release|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Win-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.XamMac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.XamMac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.XamMac-Net6-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.XamMac-Net6-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.Mac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.Win-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.Win-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.XamMac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C93D746E-1586-4D4F-B411-BF5A966E6A08}.XamMac-Net6-Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB137A6D-A5CC-4BB1-8B74-E55E396AD222}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB137A6D-A5CC-4BB1-8B74-E55E396AD222}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB137A6D-A5CC-4BB1-8B74-E55E396AD222}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB137A6D-A5CC-4BB1-8B74-E55E396AD222}.Release|Any CPU.Build.0 = Release|Any CPU
+		{370DDA78-990D-4761-98E8-D8124059C963}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{370DDA78-990D-4761-98E8-D8124059C963}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{370DDA78-990D-4761-98E8-D8124059C963}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{370DDA78-990D-4761-98E8-D8124059C963}.Release|Any CPU.Build.0 = Release|Any CPU
 		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Debug|x86.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Linux-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Linux-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Linux-Debug|x86.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Linux-Debug|x86.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Mac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Mac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Mac-Debug|x86.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Mac-Debug|x86.Build.0 = Debug|Any CPU
 		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Release|Any CPU.Build.0 = Release|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Release|x86.ActiveCfg = Release|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Release|x86.Build.0 = Release|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Win-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Win-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Win-Debug|x86.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.Win-Debug|x86.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.XamMac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.XamMac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.XamMac-Net6-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}.XamMac-Net6-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Debug|x86.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Linux-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Linux-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Linux-Debug|x86.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Linux-Debug|x86.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Mac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Mac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Mac-Debug|x86.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Mac-Debug|x86.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Release|Any CPU.Build.0 = Release|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Release|x86.ActiveCfg = Release|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Release|x86.Build.0 = Release|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Win-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Win-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Win-Debug|x86.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.Win-Debug|x86.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.XamMac-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.XamMac-Debug|Any CPU.Build.0 = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.XamMac-Net6-Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{606C689E-969D-4DFE-AD01-0EC731D60248}.XamMac-Net6-Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC0E2D1D-0D42-4744-BB6C-F93431399E5D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC0E2D1D-0D42-4744-BB6C-F93431399E5D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC0E2D1D-0D42-4744-BB6C-F93431399E5D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC0E2D1D-0D42-4744-BB6C-F93431399E5D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1454720E-F3CD-4450-9832-D9111E3EB668}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1454720E-F3CD-4450-9832-D9111E3EB668}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1454720E-F3CD-4450-9832-D9111E3EB668}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1454720E-F3CD-4450-9832-D9111E3EB668}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7C1673E-5124-4BE5-8D21-EC8B12F85B6B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		Policies = $0
-		$0.DotNetNamingPolicy = $1
-		$0.VersionControlPolicy = $2
-		$0.StandardHeader = $3
-		$3.Text = @\n${FileName}\n \nAuthor:\n      ${AuthorName} <${AuthorEmail}>\n\nCopyright (c) ${Year} ${CopyrightHolder}\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the "Software"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.
-		$0.TextStylePolicy = $4
-		$4.FileWidth = 80
-		$4.scope = text/x-csharp
-		$0.CSharpFormattingPolicy = $5
-		$5.scope = text/x-csharp
-	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897} = {56F1CDDC-3E7A-46B0-BDFB-75A0D88C1FE9}
-		{606C689E-969D-4DFE-AD01-0EC731D60248} = {56F1CDDC-3E7A-46B0-BDFB-75A0D88C1FE9}
+		{88C04B85-B69B-47B4-AB9F-64F6DD4E0897} = {889B98A1-B4AC-48E1-AA64-5982169FDC2E}
+		{BC0E2D1D-0D42-4744-BB6C-F93431399E5D} = {889B98A1-B4AC-48E1-AA64-5982169FDC2E}
+		{1454720E-F3CD-4450-9832-D9111E3EB668} = {889B98A1-B4AC-48E1-AA64-5982169FDC2E}
 	EndGlobalSection
 EndGlobal
