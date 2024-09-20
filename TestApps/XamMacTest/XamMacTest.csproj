@@ -10,6 +10,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>true</ImplicitUsings>
     <SupportedOSPlatformVersion>12.0</SupportedOSPlatformVersion>
+    <IsPackable>false</IsPackable>
 
     <!--
       Enable full trimming in Release mode.

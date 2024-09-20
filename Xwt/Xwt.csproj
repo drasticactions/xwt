@@ -8,6 +8,7 @@
     <RootNamespace>Xwt</RootNamespace>
     <AssemblyName>Xwt</AssemblyName>
     <DisableImplicitNamespaceImports>True</DisableImplicitNamespaceImports>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -21,11 +22,11 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <PackageId>Xwt</PackageId>
-    <Authors>Lluis Sanchez</Authors>
+    <PackageId>DA.Xwt</PackageId>
+    <Authors>drasticactions, Lluis Sanchez</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/mono/xwt/</PackageProjectUrl>
-    <PackageTags>xwt cross platform gui ui toolkit framework desktop wpf mac osx monomac cocoa gtk</PackageTags>
+    <PackageProjectUrl>https://github.com/drasticactions/xwt/</PackageProjectUrl>
+    <PackageTags>xwt cross platform gui ui toolkit framework desktop wpf mac osx cocoa</PackageTags>
     <Description>Xwt is a cross-platform UI toolkit for creating desktop applications with .NET and Mono that run on multiple platforms from the same codebase.
 
 Xwt works by exposing one unified API across all environments that is mapped to a set of native controls on each platform.

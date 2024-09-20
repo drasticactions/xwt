@@ -10,6 +10,7 @@
 		<RootNamespace>Xwt.WPF</RootNamespace>
 		<AssemblyName>Xwt.WPF</AssemblyName>
 		<DefineConstants>DEBUG;NETFRAMEWORK</DefineConstants>
+		<IsPackable>true</IsPackable>
 	</PropertyGroup>
 	<PropertyGroup>
 		<ReferenceWpfAeroTheme>false</ReferenceWpfAeroTheme>
@@ -29,11 +30,10 @@
 		<LangVersion>6</LangVersion>
 	</PropertyGroup>
 	<PropertyGroup>
-		<PackageId>Xwt.WPF</PackageId>
-		<PackageVersion>1.0.0</PackageVersion>
-		<Authors>Lluis Sanchez</Authors>
+		<PackageId>DA.Xwt.WPF</PackageId>
+		<Authors>drasticactions, Lluis Sanchez</Authors>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://github.com/mono/xwt/</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/drasticactions/xwt/</PackageProjectUrl>
 		<PackageTags>xwt cross platform gui ui toolkit framework desktop wpf</PackageTags>
 		<Description>
 			Xwt is a cross-platform UI toolkit for creating desktop applications with .NET and Mono.

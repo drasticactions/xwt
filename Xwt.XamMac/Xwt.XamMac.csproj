@@ -10,15 +10,23 @@
     <AssemblyOriginatorKeyFile>..\xwt.snk</AssemblyOriginatorKeyFile>
     <TargetFramework>net8.0-macos</TargetFramework>
     <DisableImplicitNamespaceImports>True</DisableImplicitNamespaceImports>
-
     <SupportedOSPlatformVersion>10.14</SupportedOSPlatformVersion>
-
-    <AssemblyTitle>Xwt.XamMac</AssemblyTitle>
+    <AssemblyTitle>DA.Xwt.XamMac</AssemblyTitle>
     <AssemblyDescription>Xamarin Mac Toolkit for the Xwt UI Framework</AssemblyDescription>
     <Product>Xwt UI Framework</Product>
-    <Copyright>Microsoft, Inc (https://www.microsoft.com/)</Copyright>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <InformationalVersion>0.1.0.0-prerelease</InformationalVersion>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <PropertyGroup>
+		<PackageId>DA.Xwt.XamMac</PackageId>
+		<Authors>drasticactions, Lluis Sanchez</Authors>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/drasticactions/xwt/</PackageProjectUrl>
+		<PackageTags>xwt cross platform gui ui toolkit framework desktop macos</PackageTags>
+		<Description>
+			Xwt is a cross-platform UI toolkit for creating desktop applications with .NET and Mono.
+
+			This package contains the macOS toolkit backend for Xwt based applications targeting macOS AppKit.
+		</Description>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>

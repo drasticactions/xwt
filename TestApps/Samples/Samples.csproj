@@ -7,6 +7,7 @@
     <ProjectGuid>{88C04B85-B69B-47B4-AB9F-64F6DD4E0897}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>Samples</RootNamespace>
+    <IsPackable>false</IsPackable>
     <AssemblyName>Samples</AssemblyName>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
